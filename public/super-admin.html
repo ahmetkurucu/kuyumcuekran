@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin - Kullanıcı Yönetimi</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a1f29;
+      --border: #2d3748;
+      --gold: #fbbf24;
+      --text: #e5e7eb;
+      --text-dim: #9ca3af;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    
+    .topbar {
+      background: linear-gradient(135deg, #991b1b, #7f1d1d);
+      border-bottom: 2px solid #dc2626;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .topbar h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    
+    .card {
+      background: var(--panel);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      margin-bottom: 30px;
+    }
+    
+    .card-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 12px 15px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    }
+    
+    .message {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+      font-weight: 500;
+    }
+    
+    .message.show { display: block; }
+    
+    .message.success {
+      background: rgba(34, 197, 94, 0.1);
+      border-left: 4px solid #22c55e;
+      color: #86efac;
+    }
+    
+    .message.error {
+      background: rgba(239, 68, 68, 0.1);
+      border-left: 4px solid #ef4444;
+      color: #fca5a5;
+    }
+    
+    .user-list {
+      margin-top: 30px;
+    }
+    
+    .user-item {
+      background: var(--bg);
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--border);
+    }
+    
+    .user-info h4 {
+      color: var(--text);
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+    
+    .user-info p {
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+    
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>🔐 SUPER ADMIN - Kullanıcı Yönetimi</h1>
+    <button class="btn btn-danger" onclick="logout()">🚪 Çıkış</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-title">
+        <span>➕</span>
+        Yeni Kullanıcı Ekle
+      </div>
+
+      <div class="form-group">
+        <label>Kullanıcı Adı (Email)</label>
+        <input id="username" type="text" placeholder="ornek@gmail.com" required>
+      </div>
+
+      <div class="form-group">
+        <label>Mağaza Adı (Tam Ad)</label>
+        <input id="fullName" type="text" placeholder="ABC Kuyumculuk" required>
+      </div>
+
+      <div class="form-group">
+        <label>Şifre</label>
+        <input id="password" type="password" placeholder="En az 6 karakter" required>
+      </div>
+
+      <div class="form-group">
+        <label>Kullanıcı Rolü</label>
+        <select id="role">
+          <option value="admin">👤 Admin (Normal Kullanıcı)</option>
+          <option value="superadmin">🔐 Super Admin (Tüm Yetkiler)</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" onclick="addUser()">➕ Kullanıcı Ekle</button>
+
+      <div class="message" id="msg"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>👥</span>
+        Kayıtlı Kullanıcılar
+      </div>
+
+      <div class="user-list" id="userList">
+        <p style="color: var(--text-dim);">Yükleniyor...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const API_BASE = window.location.origin + '/api';
+
+    if (!token) {
+      window.location.href = '/login.html';
+    }
+
+    // Role kontrolü - Sadece superadmin erişebilir
+    if (user.role !== 'superadmin') {
+      alert('⛔ Erişim Reddedildi!\n\nBu sayfaya sadece Super Admin yetkisi olan kullanıcılar erişebilir.');
+      window.location.href = '/admin.html';
+    }
+
+    // Kullanıcı ekle
+    async function addUser() {
+      const username = document.getElementById('username').value.trim();
+      const fullName = document.getElementById('fullName').value.trim();
+      const password = document.getElementById('password').value;
+      const role = document.getElementById('role').value;
+      const msgEl = document.getElementById('msg');
+
+      if (!username || !fullName || !password) {
+        msgEl.textContent = '❌ Tüm alanları doldurun!';
+        msgEl.className = 'message error show';
+        setTimeout(() => msgEl.classList.remove('show'), 3000);
+        return;
+      }
+
+      if (password.length < 6) {
+        msgEl.textContent = '❌ Şifre en az 6 karakter olmalı!';
+        msgEl.className = 'message error show';
+        setTimeout(() => msgEl.classList.remove('show'), 3000);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            username: username.toLowerCase(),
+            full_name: fullName,
+            password: password,
+            role: role
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          msgEl.textContent = '✅ Kullanıcı başarıyla eklendi!';
+          msgEl.className = 'message success show';
+          
+          // Formu temizle
+          document.getElementById('username').value = '';
+          document.getElementById('fullName').value = '';
+          document.getElementById('password').value = '';
+          
+          // Listeyi yenile
+          loadUsers();
+        } else {
+          msgEl.textContent = '❌ ' + (data.message || 'Hata oluştu');
+          msgEl.className = 'message error show';
+        }
+
+        setTimeout(() => msgEl.classList.remove('show'), 3000);
+      } catch (error) {
+        msgEl.textContent = '❌ Bağlantı hatası: ' + error.message;
+        msgEl.className = 'message error show';
+        setTimeout(() => msgEl.classList.remove('show'), 3000);
+      }
+    }
+
+    // Kullanıcıları listele
+    async function loadUsers() {
+      try {
+        const response = await fetch(`${API_BASE}/auth/users`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.users) {
+          const userListEl = document.getElementById('userList');
+          
+          if (data.users.length === 0) {
+            userListEl.innerHTML = '<p style="color: var(--text-dim);">Henüz kullanıcı yok.</p>';
+            return;
+          }
+
+          userListEl.innerHTML = data.users.map(user => `
+            <div class="user-item">
+              <div class="user-info">
+                <h4>🏪 ${user.full_name} ${user.role === 'superadmin' ? '🔐' : '👤'}</h4>
+                <p>📧 ${user.username} | Rol: ${user.role === 'superadmin' ? 'Super Admin' : 'Admin'}</p>
+              </div>
+              <button class="btn btn-danger btn-small" onclick="deleteUser('${user._id}', '${user.full_name}')">
+                🗑️ Sil
+              </button>
+            </div>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Kullanıcı listeleme hatası:', error);
+      }
+    }
+
+    // Kullanıcı sil
+    async function deleteUser(userId, fullName) {
+      if (!confirm(`"${fullName}" kullanıcısını silmek istediğinize emin misiniz?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/auth/users/${userId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ Kullanıcı silindi!');
+          loadUsers();
+        } else {
+          alert('❌ Hata: ' + (data.message || 'Kullanıcı silinemedi'));
+        }
+      } catch (error) {
+        alert('❌ Bağlantı hatası: ' + error.message);
+      }
+    }
+
+    function logout() {
+      if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login.html';
+      }
+    }
+
+    // Sayfa yüklendiğinde kullanıcıları listele
+    loadUsers();
+  </script>
+</body>
+</html>

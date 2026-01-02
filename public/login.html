@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kuyumcu Vitrin - Giriş</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      width: 400px;
+    }
+    .logo { text-align: center; margin-bottom: 30px; }
+    .logo-icon { font-size: 64px; }
+    h1 { text-align: center; color: #333; margin: 10px 0; }
+    .subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 30px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; color: #555; margin-bottom: 8px; font-weight: 500; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    input:focus { outline: none; border-color: #667eea; }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .error {
+      background: #fee2e2;
+      color: #dc2626;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 15px;
+      display: none;
+    }
+    .error.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <div class="logo-icon">💎</div>
+      <h1>Kuyumcu Vitrin</h1>
+      <div class="subtitle">Marj & Fiyat Sistemi</div>
+    </div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Kullanıcı Adı</label>
+        <input type="text" id="username" required autofocus>
+      </div>
+      <div class="form-group">
+        <label>Şifre</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" class="btn">Giriş Yap</button>
+      <div class="error" id="error"></div>
+    </form>
+  </div>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('error');
+      
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+        
+        if (data.success && data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          window.location.href = '/admin.html';
+        } else {
+          errorEl.textContent = data.message || 'Giriş başarısız';
+          errorEl.classList.add('show');
+        }
+      } catch (error) {
+        errorEl.textContent = 'Bağlantı hatası!';
+        errorEl.classList.add('show');
+      }
+    });
+  </script>
+</body>
+</html>
