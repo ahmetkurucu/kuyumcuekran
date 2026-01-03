@@ -51,3 +51,6 @@ app.listen(PORT, () => {
   console.log(`⏰ Token Süresi: ${process.env.JWT_EXPIRES_IN}`);
   console.log('=================================');
 });
+
+// Vercel için export
+module.exports = app;
