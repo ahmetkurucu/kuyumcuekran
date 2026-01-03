@@ -25,11 +25,23 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// 404 Handler
-app.use((req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    message: 'Endpoint bulunamadı' 
+// Catch-all route for serving static HTML files
+app.get('*', (req, res, next) => {
+  // API route'larını geçir
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  
+  // HTML dosyalarını serve et
+  const filePath = path.join(__dirname, 'public', req.path);
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      // Dosya yoksa 404
+      res.status(404).json({ 
+        success: false, 
+        message: 'Sayfa bulunamadı: ' + req.path
+      });
+    }
   });
 });
 
