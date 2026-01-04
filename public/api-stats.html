@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ücretli API İstatistikleri</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .card {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 40px;
+      font-size: 14px;
+    }
+
+    .stat-box {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 25px;
+      text-align: center;
+      color: white;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-value {
+      font-size: 56px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-detail {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    .progress-section {
+      margin-bottom: 25px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #e0e0e0;
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transition: width 0.5s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .info-item {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    .info-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      display: none;
+      color: #856404;
+      font-size: 14px;
+    }
+
+    .warning.active {
+      display: block;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 10px;
+    }
+
+    .btn-refresh {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+    }
+
+    .btn-refresh:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-back {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-back:hover {
+      background: #5a6268;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 50px;
+      color: #999;
+    }
+
+    .timestamp {
+      text-align: center;
+      color: #999;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>💰 Ücretli API Kullanımı</h1>
+      <p class="subtitle">Bu ay başından beri</p>
+
+      <div id="loading" class="loading">Yükleniyor...</div>
+
+      <div id="content" style="display: none;">
+        <div class="warning" id="warning">
+          ⚠️ DİKKAT! Ücretli API kullanımı %80'i geçti!
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Ücretli API Çekimi</div>
+          <div class="stat-value" id="paidCount">0</div>
+          <div class="stat-detail">RapidAPI + TCMB</div>
+        </div>
+
+        <div class="progress-section">
+          <div class="progress-header">
+            <span>Aylık Limit</span>
+            <span id="limitText">0 / 250,000</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%">
+              <span id="progressPercent">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Kalan Limit</div>
+            <div class="info-value" id="remaining">250,000</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Kullanım Oranı</div>
+            <div class="info-value" id="usagePercent">0%</div>
+          </div>
+        </div>
+
+        <button class="btn btn-refresh" onclick="loadStats()">🔄 Yenile</button>
+        <button class="btn btn-back" onclick="location.href='/admin.html'">← Admin Panel</button>
+
+        <div class="timestamp" id="timestamp"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Lütfen giriş yapın!');
+      window.location.href = '/login.html';
+    }
+
+    async function loadStats() {
+      try {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('content').style.display = 'none';
+
+        const response = await fetch('/api/cache/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+
+        const stats = result.data;
+        const paidCount = stats.paidApiUsage || 0;
+        const limit = stats.limit || 250000;
+        const remaining = Math.max(0, limit - paidCount);
+        const usedPercent = ((paidCount / limit) * 100).toFixed(2);
+
+        // Değerleri göster
+        document.getElementById('paidCount').textContent = paidCount.toLocaleString();
+        document.getElementById('limitText').textContent = `${paidCount.toLocaleString()} / ${limit.toLocaleString()}`;
+        document.getElementById('remaining').textContent = remaining.toLocaleString();
+        document.getElementById('usagePercent').textContent = `${usedPercent}%`;
+
+        // Progress bar
+        const progressWidth = Math.min(100, usedPercent);
+        document.getElementById('progressFill').style.width = `${progressWidth}%`;
+        document.getElementById('progressPercent').textContent = `${usedPercent}%`;
+
+        // Uyarı
+        if (usedPercent >= 80) {
+          document.getElementById('warning').classList.add('active');
+          if (usedPercent >= 100) {
+            document.getElementById('warning').textContent = '🚨 UYARI! Ücretli API limiti aşıldı!';
+            document.getElementById('warning').style.background = '#f8d7da';
+            document.getElementById('warning').style.borderColor = '#dc3545';
+            document.getElementById('warning').style.color = '#721c24';
+          } else {
+            document.getElementById('warning').textContent = `⚠️ DİKKAT! Ücretli API kullanımı %${usedPercent} - Limit yaklaşıyor!`;
+          }
+        } else {
+          document.getElementById('warning').classList.remove('active');
+        }
+
+        // Timestamp
+        const now = new Date();
+        document.getElementById('timestamp').textContent = `Son güncelleme: ${now.toLocaleString('tr-TR')}`;
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+
+      } catch (error) {
+        alert('Hata: ' + error.message);
+        document.getElementById('loading').textContent = 'Hata: ' + error.message;
+      }
+    }
+
+    // İlk yükleme
+    loadStats();
+
+    // Her 30 saniyede bir yenile
+    setInterval(loadStats, 30000);
+  </script>
+</body>
+</html>

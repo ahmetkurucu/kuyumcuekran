@@ -131,24 +131,39 @@ const API_CONFIG = {
 async function fetchFromFreeAPI() {
   try {
     const response = await axios.get(API_CONFIG.FREE.url, {
-      timeout: API_CONFIG.FREE.timeout
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0'
+      }
     });
 
-    if (!response.data) {
-      throw new Error('Ücretsiz API veri döndürmedi');
+    if (!response.data || !response.data.data) {
+      throw new Error('Geçersiz veri formatı');
     }
 
-    const apiData = response.data;
+    const rawData = response.data.data;
     
-    // Veri validasyonu - en az bir fiyat var mı?
-    if (!apiData.KULCEALTIN_satis || parseFloat(apiData.KULCEALTIN_satis) === 0) {
+    // Ücretsiz API formatını normalize et
+    const normalizedData = {};
+    
+    // Object formatından düz format'a çevir
+    Object.keys(rawData).forEach(key => {
+      const item = rawData[key];
+      if (item && typeof item === 'object') {
+        normalizedData[`${key}_alis`] = parseFloat(item.alis) || 0;
+        normalizedData[`${key}_satis`] = parseFloat(item.satis) || 0;
+      }
+    });
+    
+    // Veri validasyonu
+    if (!normalizedData.KULCEALTIN_satis || normalizedData.KULCEALTIN_satis === 0) {
       throw new Error('Ücretsiz API geçersiz veri döndürdü');
     }
 
     return {
       success: true,
       source: 'free_api',
-      data: apiData
+      data: normalizedData
     };
 
   } catch (error) {

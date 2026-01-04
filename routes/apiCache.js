@@ -3,6 +3,7 @@ const router = express.Router();
 const axios = require('axios');
 const { authenticateToken } = require('../middleware/auth');
 const CachedPrice = require('../models/CachedPrice');
+const User = require('../models/User');
 
 /**
  * RapidAPI array formatını parse et
@@ -66,16 +67,30 @@ const API_CONFIG = {
 async function fetchFromFreeAPI() {
   try {
     const response = await axios.get(API_CONFIG.FREE.url, {
-      timeout: API_CONFIG.FREE.timeout
+      timeout: 5000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0'
+      }
     });
 
-    if (!response.data) {
-      throw new Error('Ücretsiz API veri döndürmedi');
+    if (!response.data || !response.data.data) {
+      throw new Error('Geçersiz veri formatı');
     }
 
-    const apiData = response.data;
+    const rawData = response.data.data;
     
-    if (!apiData.KULCEALTIN_satis || parseFloat(apiData.KULCEALTIN_satis) === 0) {
+    // Ücretsiz API formatını normalize et
+    const normalizedData = {};
+    
+    Object.keys(rawData).forEach(key => {
+      const item = rawData[key];
+      if (item && typeof item === 'object') {
+        normalizedData[`${key}_alis`] = parseFloat(item.alis) || 0;
+        normalizedData[`${key}_satis`] = parseFloat(item.satis) || 0;
+      }
+    });
+    
+    if (!normalizedData.KULCEALTIN_satis || normalizedData.KULCEALTIN_satis === 0) {
       throw new Error('Ücretsiz API geçersiz veri döndürdü');
     }
 
@@ -83,7 +98,7 @@ async function fetchFromFreeAPI() {
       success: true,
       source: 'free_api',
       sourceName: API_CONFIG.FREE.name,
-      data: apiData
+      data: normalizedData
     };
 
   } catch (error) {
@@ -300,6 +315,48 @@ router.get('/cached', authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Cache\'den fiyat okunamadı',
+      error: error.message
+    });
+  }
+});
+
+// API istatistiklerini getir (Sadece ücretli API)
+router.get('/stats', authenticateToken, async (req, res) => {
+  try {
+    // Sadece Super Admin görebilir
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== 'superadmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Bu sayfaya erişim yetkiniz yok'
+      });
+    }
+
+    // Bu ayın başlangıcı
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Sadece ücretli API kullanımı
+    const paidApiUsage = await CachedPrice.countDocuments({
+      source: 'paid_api',
+      fetchedAt: { $gte: monthStart }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        paidApiUsage,
+        monthStart: monthStart,
+        lastUpdate: now,
+        limit: 250000
+      }
+    });
+
+  } catch (error) {
+    console.error('İstatistik hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'İstatistikler alınamadı',
       error: error.message
     });
   }
