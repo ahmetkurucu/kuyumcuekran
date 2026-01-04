@@ -25,7 +25,8 @@ router.get('/current', authenticateToken, async (req, res) => {
     if (!cachedPrice) {
       return res.status(404).json({
         success: false,
-        message: 'Fiyat cache\'i bulunamadı. Lütfen bekleyin, otomatik çekilecek.'
+        message: 'Fiyat cache\'i bulunamadı. Super Admin\'in API\'den çekmesi gerekiyor.',
+        hint: 'Super Admin: POST /api/cache/fetch-from-api'
       });
     }
 
@@ -37,11 +38,8 @@ router.get('/current', authenticateToken, async (req, res) => {
 
     // Her ürün için marj uygula
     Object.keys(prices).forEach(key => {
-      const parts = key.split('_');
-      const type = parts[parts.length - 1]; // alis veya satis
-      const productCode = parts.slice(0, -1).join('_'); // KULCEALTIN, AYAR22, vb.
-      
-      const marjKey = `${key}_marj`;
+      const [productCode, type] = key.split('_');
+      const marjKey = `${productCode}_${type}_marj`;
       const marj = user.marjlar?.[marjKey] || 0;
 
       if (type === 'alis') {
@@ -75,7 +73,7 @@ router.get('/current', authenticateToken, async (req, res) => {
   }
 });
 
-// Marj güncelleme
+// Marj güncelleme (değişiklik yok)
 router.post('/update-marj', authenticateToken, async (req, res) => {
   try {
     const { code, alis_marj, satis_marj } = req.body;
@@ -102,7 +100,6 @@ router.post('/update-marj', authenticateToken, async (req, res) => {
     user.marjlar[`${code}_alis_marj`] = parseFloat(alis_marj) || 0;
     user.marjlar[`${code}_satis_marj`] = parseFloat(satis_marj) || 0;
 
-    user.markModified('marjlar');
     await user.save();
 
     res.json({
@@ -121,7 +118,7 @@ router.post('/update-marj', authenticateToken, async (req, res) => {
   }
 });
 
-// Marjları listele
+// Marjları listele (değişiklik yok)
 router.get('/marjlar', authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);

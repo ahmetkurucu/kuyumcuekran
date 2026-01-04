@@ -1,0 +1,120 @@
+<!-- Super Admin Dashboard'a eklenecek kısım -->
+
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <div class="card-title-icon">🔄</div>
+      API Yönetimi
+    </div>
+  </div>
+
+  <div style="padding: 1rem; background: rgba(245, 158, 11, 0.1); border-radius: 12px; margin-bottom: 1rem;">
+    <h4 style="color: var(--primary); margin-bottom: 0.5rem;">ℹ️ API Cache Sistemi</h4>
+    <p style="color: var(--text-muted); font-size: 0.875rem; line-height: 1.6;">
+      <strong>Sadece siz</strong> (Super Admin) API'den fiyat çekebilirsiniz. 
+      Çekilen fiyatlar MongoDB'ye kaydedilir ve tüm admin kullanıcılar bu cache'den okur.
+      Bu sayede API limiti korunur.
+    </p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div style="background: var(--input-bg); padding: 1rem; border-radius: 10px; border: 1px solid var(--border);">
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Son Güncelleme</div>
+      <div style="font-size: 1.25rem; font-weight: 700; color: var(--text);" id="lastCacheUpdate">--:--</div>
+    </div>
+    
+    <div style="background: var(--input-bg); padding: 1rem; border-radius: 10px; border: 1px solid var(--border);">
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Cache Yaşı</div>
+      <div style="font-size: 1.25rem; font-weight: 700; color: var(--text);" id="cacheAge">-- sn</div>
+    </div>
+    
+    <div style="background: var(--input-bg); padding: 1rem; border-radius: 10px; border: 1px solid var(--border);">
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Toplam İstek</div>
+      <div style="font-size: 1.25rem; font-weight: 700; color: var(--text);" id="totalRequests">0</div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 1rem;">
+    <button class="btn btn-primary" onclick="fetchFromAPI()">
+      🔄 API'den Fiyat Çek
+    </button>
+    <button class="btn btn-secondary" onclick="checkCacheStatus()">
+      📊 Cache Durumu
+    </button>
+  </div>
+
+  <div class="message" id="apiMsg" style="margin-top: 1rem;"></div>
+</div>
+
+<script>
+  let requestCount = 0;
+
+  // API'den fiyat çek
+  async function fetchFromAPI() {
+    const msgEl = document.getElementById('apiMsg');
+    msgEl.textContent = '⏳ API\'den fiyat çekiliyor...';
+    msgEl.className = 'message show';
+    msgEl.style.background = 'rgba(59, 130, 246, 0.1)';
+    msgEl.style.borderLeftColor = '#3b82f6';
+
+    try {
+      const response = await fetch(`${API_BASE}/cache/fetch-from-api`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        msgEl.textContent = '✅ Fiyatlar başarıyla çekildi ve cache\'lendi!';
+        msgEl.className = 'message success show';
+        
+        requestCount++;
+        document.getElementById('totalRequests').textContent = requestCount;
+        
+        checkCacheStatus();
+      } else {
+        msgEl.textContent = '❌ ' + (data.message || 'API hatası');
+        msgEl.className = 'message error show';
+      }
+
+      setTimeout(() => msgEl.classList.remove('show'), 3000);
+    } catch (error) {
+      msgEl.textContent = '❌ Bağlantı hatası: ' + error.message;
+      msgEl.className = 'message error show';
+      setTimeout(() => msgEl.classList.remove('show'), 3000);
+    }
+  }
+
+  // Cache durumunu kontrol et
+  async function checkCacheStatus() {
+    try {
+      const response = await fetch(`${API_BASE}/cache/cached`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.metadata) {
+        const fetchedAt = new Date(data.metadata.fetchedAt);
+        document.getElementById('lastCacheUpdate').textContent = 
+          fetchedAt.toLocaleTimeString('tr-TR');
+        
+        document.getElementById('cacheAge').textContent = 
+          data.metadata.cacheAge + ' sn';
+      }
+    } catch (error) {
+      console.error('Cache status error:', error);
+    }
+  }
+
+  // Sayfa yüklendiğinde cache durumunu kontrol et
+  checkCacheStatus();
+  
+  // Her 30 saniyede bir cache durumunu güncelle
+  setInterval(checkCacheStatus, 30000);
+</script>
