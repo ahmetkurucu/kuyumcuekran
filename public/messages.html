@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesajlar - Super Admin</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a1f29;
+      --border: #2d3748;
+      --gold: #fbbf24;
+      --text: #e5e7eb;
+      --text-dim: #9ca3af;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    
+    .topbar {
+      background: linear-gradient(135deg, #991b1b, #7f1d1d);
+      border-bottom: 2px solid #dc2626;
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    
+    .topbar h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .badge {
+      background: #dc2626;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    
+    .card {
+      background: var(--panel);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    
+    .message-item {
+      background: var(--bg);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border-left: 4px solid #6b7280;
+      transition: all 0.3s;
+    }
+    
+    .message-item.new {
+      border-left-color: #fbbf24;
+      background: linear-gradient(90deg, rgba(251, 191, 36, 0.1) 0%, var(--bg) 100%);
+    }
+    
+    .message-item.read {
+      opacity: 0.7;
+    }
+    
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .message-info h3 {
+      color: var(--text);
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+    
+    .message-meta {
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+    
+    .message-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-read {
+      background: #22c55e;
+      color: white;
+    }
+    
+    .btn-read:hover {
+      background: #16a34a;
+    }
+    
+    .btn-delete {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .btn-delete:hover {
+      background: #dc2626;
+    }
+    
+    .btn-back {
+      background: #6c757d;
+      color: white;
+      padding: 12px 24px;
+    }
+    
+    .btn-back:hover {
+      background: #5a6268;
+    }
+    
+    .message-content {
+      color: var(--text);
+      line-height: 1.6;
+      margin-top: 10px;
+      padding: 15px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status-new {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .status-read {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-dim);
+    }
+    
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>
+      📧 Gelen Mesajlar
+      <span class="badge" id="newCount">0</span>
+    </h1>
+    <button class="btn btn-back" onclick="location.href='/super-admin.html'">← Super Admin</button>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div id="loading" class="loading">Yükleniyor...</div>
+      <div id="messagesList" style="display: none;"></div>
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-state-icon">📭</div>
+        <h3>Henüz mesaj yok</h3>
+        <p>Gelen mesajlar burada görünecek</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!token || user.role !== 'superadmin') {
+      alert('⛔ Erişim Reddedildi!');
+      window.location.href = '/login.html';
+    }
+
+    async function loadMessages() {
+      try {
+        document.getElementById('loading').style.display = 'block';
+        
+        const response = await fetch('/api/contact', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message);
+        }
+
+        const { messages, newCount } = result.data;
+
+        document.getElementById('newCount').textContent = newCount;
+        document.getElementById('loading').style.display = 'none';
+
+        if (messages.length === 0) {
+          document.getElementById('emptyState').style.display = 'block';
+          return;
+        }
+
+        document.getElementById('messagesList').style.display = 'block';
+        document.getElementById('messagesList').innerHTML = messages.map(msg => `
+          <div class="message-item ${msg.status}">
+            <div class="message-header">
+              <div class="message-info">
+                <h3>👤 ${msg.name}</h3>
+                <div class="message-meta">
+                  📧 ${msg.email}
+                  ${msg.phone ? `| 📞 ${msg.phone}` : ''}
+                  ${msg.company ? `| 🏢 ${msg.company}` : ''}
+                  <br>
+                  🕐 ${new Date(msg.createdAt).toLocaleString('tr-TR')}
+                  <span class="status-badge status-${msg.status}">
+                    ${msg.status === 'new' ? '🆕 Yeni' : '✅ Okundu'}
+                  </span>
+                </div>
+              </div>
+              <div class="message-actions">
+                ${msg.status === 'new' ? `
+                  <button class="btn btn-read" onclick="markAsRead('${msg._id}')">
+                    ✓ Okundu
+                  </button>
+                ` : ''}
+                <button class="btn btn-delete" onclick="deleteMessage('${msg._id}')">
+                  🗑️ Sil
+                </button>
+              </div>
+            </div>
+            <div class="message-content">
+              ${msg.message.replace(/\n/g, '<br>')}
+            </div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        console.error('Mesaj yükleme hatası:', error);
+        document.getElementById('loading').textContent = 'Hata: ' + error.message;
+      }
+    }
+
+    async function markAsRead(id) {
+      try {
+        const response = await fetch(`/api/contact/${id}/read`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          loadMessages();
+        } else {
+          alert('Hata: ' + result.message);
+        }
+      } catch (error) {
+        alert('Bağlantı hatası!');
+      }
+    }
+
+    async function deleteMessage(id) {
+      if (!confirm('Bu mesajı silmek istediğinize emin misiniz?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/contact/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          loadMessages();
+        } else {
+          alert('Hata: ' + result.message);
+        }
+      } catch (error) {
+        alert('Bağlantı hatası!');
+      }
+    }
+
+    // Sayfa yüklenince
+    loadMessages();
+
+    // Her 30 saniyede bir yenile
+    setInterval(loadMessages, 30000);
+  </script>
+</body>
+</html>

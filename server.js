@@ -24,6 +24,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/cache', require('./routes/apiCache'));
 app.use('/api/fiyat', require('./routes/fiyat'));
+app.use('/api/contact', require('./routes/contact'));
 
 // Ana sayfa
 app.get('/', (req, res) => {
