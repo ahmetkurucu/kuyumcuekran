@@ -29,6 +29,27 @@ router.get('/current', authenticateToken, async (req, res) => {
       });
     }
 
+    // API durumu kontrolü
+    const apiStatus = cachedPrice.lastApiStatus || {};
+    
+    // Her iki API de çalışmıyorsa UYARI
+    if (apiStatus.bothApiFailed) {
+      const failMinutes = Math.floor((Date.now() - new Date(apiStatus.lastFailTime)) / 60000);
+      
+      return res.status(503).json({
+        success: false,
+        message: '⚠️ TÜM API\'LER ÇALIŞMIYOR!',
+        error: 'API bağlantısı kurulamıyor. Fiyat güncellenemedi.',
+        apiStatus: {
+          freeApi: 'Çalışmıyor ❌',
+          paidApi: 'Çalışmıyor ❌',
+          lastFailTime: apiStatus.lastFailTime,
+          failDuration: `${failMinutes} dakika önce`,
+          warning: 'VERİ GÜNCELLENMİYOR - İŞLEM YAPMAKTAN KAÇININ!'
+        }
+      });
+    }
+
     // Ham fiyatları al
     const prices = cachedPrice.prices;
 
@@ -55,13 +76,25 @@ router.get('/current', authenticateToken, async (req, res) => {
       }
     });
 
+    // Veri yaşı kontrolü (5 dakikadan eskiyse uyarı)
+    const cacheAgeMinutes = Math.floor((Date.now() - cachedPrice.fetchedAt) / 60000);
+    const isStale = cacheAgeMinutes > 5;
+
     res.json({
       success: true,
       data: finalPrices,
       metadata: {
         fetchedAt: cachedPrice.fetchedAt,
         cacheAge: Math.floor((Date.now() - cachedPrice.fetchedAt) / 1000),
-        source: 'cached'
+        cacheAgeMinutes: cacheAgeMinutes,
+        source: cachedPrice.source,
+        isStale: isStale,
+        apiStatus: {
+          freeApi: apiStatus.freeApiWorking ? 'Çalışıyor ✅' : 'Çalışmıyor ❌',
+          paidApi: apiStatus.paidApiWorking ? 'Çalışıyor ✅' : 'Çalışmıyor ❌',
+          usingPaidApi: cachedPrice.source === 'paid_api'
+        },
+        warning: isStale ? '⚠️ VERİ 5 DAKİKADAN ESKİ!' : null
       }
     });
 

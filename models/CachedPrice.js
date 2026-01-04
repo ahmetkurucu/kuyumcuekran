@@ -46,6 +46,14 @@ const cachedPriceSchema = new mongoose.Schema({
     default: 'haremaltin_api'
   },
   
+  // API durumu
+  lastApiStatus: {
+    freeApiWorking: { type: Boolean, default: true },
+    paidApiWorking: { type: Boolean, default: true },
+    bothApiFailed: { type: Boolean, default: false },
+    lastFailTime: Date
+  },
+  
   // Cache süresi
   expiresAt: {
     type: Date,

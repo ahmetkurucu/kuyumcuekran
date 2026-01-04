@@ -98,18 +98,11 @@ function parseRapidAPIData(dataArray) {
     }
   });
   
-  // USD ve EUR
-  const usdItem = dataArray.find(item => item.key === 'USD/KG');
-  const eurItem = dataArray.find(item => item.key === 'EUR/KG');
-  
-  if (usdItem) {
-    result.USDTRY_alis = parseFloat(usdItem.buy.replace(/\./g, '').replace(',', '.')) / 1000 || 0;
-    result.USDTRY_satis = parseFloat(usdItem.sell.replace(/\./g, '').replace(',', '.')) / 1000 || 0;
-  }
-  if (eurItem) {
-    result.EURTRY_alis = parseFloat(eurItem.buy.replace(/\./g, '').replace(',', '.')) / 1000 || 0;
-    result.EURTRY_satis = parseFloat(eurItem.sell.replace(/\./g, '').replace(',', '.')) / 1000 || 0;
-  }
+  // USD/EUR döviz kuru API'sinden gelecek, burada 0 koy
+  result.USDTRY_alis = 0;
+  result.USDTRY_satis = 0;
+  result.EURTRY_alis = 0;
+  result.EURTRY_satis = 0;
   
   return result;
 }
@@ -169,9 +162,11 @@ async function fetchFromFreeAPI() {
 
 /**
  * ÜCRETLİ API'den veri çek (RapidAPI)
+ * + Döviz kuru API'si ekle
  */
 async function fetchFromPaidAPI() {
   try {
+    // 1. Altın fiyatları
     const response = await axios.get(API_CONFIG.PAID.url, {
       timeout: API_CONFIG.PAID.timeout,
       headers: API_CONFIG.PAID.headers
@@ -183,6 +178,48 @@ async function fetchFromPaidAPI() {
 
     // RapidAPI array formatını parse et
     const normalizedData = parseRapidAPIData(response.data.data);
+    
+    // 2. Döviz kurlarını çek (TCMB - Merkez Bankası)
+    try {
+      console.log('   💱 Döviz kurları çekiliyor (TCMB)...');
+      
+      const xml2js = require('xml2js');
+      
+      const tcmbResponse = await axios.get(
+        'https://www.tcmb.gov.tr/kurlar/today.xml',
+        { timeout: 5000 }
+      );
+      
+      // XML'i parse et
+      const parser = new xml2js.Parser();
+      const result = await parser.parseStringPromise(tcmbResponse.data);
+      
+      const currencies = result.Tarih_Date.Currency;
+      
+      // USD bul
+      const usd = currencies.find(c => c.$.CurrencyCode === 'USD');
+      if (usd) {
+        normalizedData.USDTRY_alis = parseFloat(usd.ForexBuying?.[0]) || 0;
+        normalizedData.USDTRY_satis = parseFloat(usd.ForexSelling?.[0]) || 0;
+      }
+      
+      // EUR bul
+      const eur = currencies.find(c => c.$.CurrencyCode === 'EUR');
+      if (eur) {
+        normalizedData.EURTRY_alis = parseFloat(eur.ForexBuying?.[0]) || 0;
+        normalizedData.EURTRY_satis = parseFloat(eur.ForexSelling?.[0]) || 0;
+      }
+      
+      console.log(`   ✅ TCMB: USD=${normalizedData.USDTRY_satis}, EUR=${normalizedData.EURTRY_satis}`);
+      
+    } catch (exchangeError) {
+      console.warn('   ⚠️  TCMB API hatası:', exchangeError.message);
+      // Döviz kuru alamadık ama devam et
+      normalizedData.USDTRY_alis = 0;
+      normalizedData.USDTRY_satis = 0;
+      normalizedData.EURTRY_alis = 0;
+      normalizedData.EURTRY_satis = 0;
+    }
     
     paidApiUsageCount++;
     
@@ -249,6 +286,32 @@ async function fetchPricesFromAPI() {
 
     // FALLBACK sistemi ile veri çek
     const result = await fetchPricesWithFallback();
+    
+    // Her iki API de başarısız mı?
+    const bothApiFailed = !result.success;
+    
+    if (bothApiFailed) {
+      console.error('❌ TÜM API\'LER BAŞARISIZ!');
+      
+      // Başarısızlık durumunu kaydet
+      const failedCache = new CachedPrice({
+        prices: {}, // Boş fiyat
+        fetchedBy: superAdmin._id,
+        fetchedAt: new Date(),
+        source: 'all_apis_failed',
+        lastApiStatus: {
+          freeApiWorking: false,
+          paidApiWorking: false,
+          bothApiFailed: true,
+          lastFailTime: new Date()
+        }
+      });
+      await failedCache.save();
+      
+      fetchCount++;
+      return;
+    }
+    
     const apiData = result.data;
 
     // Fiyatları parse et
@@ -284,7 +347,13 @@ async function fetchPricesFromAPI() {
       prices: prices,
       fetchedBy: superAdmin._id,
       fetchedAt: new Date(),
-      source: result.source // 'free_api' veya 'paid_api'
+      source: result.source, // 'free_api' veya 'paid_api'
+      lastApiStatus: {
+        freeApiWorking: result.source === 'free_api',
+        paidApiWorking: result.source === 'paid_api',
+        bothApiFailed: false,
+        lastFailTime: null
+      }
     });
 
     await cachedPrice.save();
