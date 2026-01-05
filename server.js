@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 const axios = require('axios');
+const connectDB = require('./config/db');
 
 const app = express();
 
@@ -12,13 +13,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// MongoDB Bağlantısı
-mongoose.connect(process.env.MONGODB_URI)
+// MongoDB Bağlantısı (Serverless için optimize)
+connectDB()
   .then(() => {
-    console.log('✅ MongoDB bağlantısı başarılı');
+    console.log('✅ MongoDB hazır');
     startAutoFetch();
   })
-  .catch(err => console.error('❌ MongoDB bağlantı hatası:', err));
+  .catch(err => {
+    console.error('❌ MongoDB bağlantı hatası:', err);
+  });
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));

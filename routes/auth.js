@@ -4,10 +4,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { authenticateToken } = require('../middleware/auth');
+const connectDB = require('../config/db');
 
 // Login
 router.post('/login', async (req, res) => {
   try {
+    // MongoDB bağlantısını kontrol et
+    await connectDB();
+    
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -70,6 +74,8 @@ router.post('/login', async (req, res) => {
 // Şifre Değiştir
 router.post('/change-password', authenticateToken, async (req, res) => {
   try {
+    await connectDB();
+    
     const { oldPassword, newPassword } = req.body;
 
     if (!oldPassword || !newPassword) {
@@ -124,6 +130,8 @@ router.post('/change-password', authenticateToken, async (req, res) => {
 // Kullanıcı kayıt (SADECE SUPERADMIN)
 router.post('/register', authenticateToken, async (req, res) => {
   try {
+    await connectDB();
+    
     // Superadmin kontrolü
     if (req.user.role !== 'superadmin') {
       return res.status(403).json({
@@ -161,7 +169,7 @@ router.post('/register', authenticateToken, async (req, res) => {
       username: username.toLowerCase().trim(),
       password: hashedPassword,
       full_name: full_name.trim(),
-      role: role || 'admin' // Varsayılan: admin
+      role: role || 'admin'
     });
 
     await newUser.save();
@@ -188,6 +196,8 @@ router.post('/register', authenticateToken, async (req, res) => {
 // Kullanıcı listesi (SADECE SUPERADMIN)
 router.get('/users', authenticateToken, async (req, res) => {
   try {
+    await connectDB();
+    
     // Superadmin kontrolü
     if (req.user.role !== 'superadmin') {
       return res.status(403).json({
@@ -213,6 +223,8 @@ router.get('/users', authenticateToken, async (req, res) => {
 // Kullanıcı sil (SADECE SUPERADMIN)
 router.delete('/users/:id', authenticateToken, async (req, res) => {
   try {
+    await connectDB();
+    
     // Superadmin kontrolü
     if (req.user.role !== 'superadmin') {
       return res.status(403).json({
