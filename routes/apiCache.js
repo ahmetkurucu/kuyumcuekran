@@ -281,9 +281,39 @@ router.post('/fetch-from-api', authenticateToken, async (req, res) => {
   }
 });
 
-// HERKES cache'den okuyabilir
+// HİBRİT SİSTEM: Ücretsiz API çalışıyorsa direkt, yoksa cache
 router.get('/cached', authenticateToken, async (req, res) => {
   try {
+    // 1. ÖNCE ÜCRETSİZ API'Yİ TEST ET (hızlı test - 3 sn timeout)
+    console.log('🔍 Ücretsiz API test ediliyor...');
+    
+    const freeApiTest = await testFreeAPI();
+    
+    // 2. ÜCRETSİZ API ÇALIŞIYORSA DİREKT ÇEK
+    if (freeApiTest.working) {
+      console.log('✅ Ücretsiz API çalışıyor - Realtime veri dönülüyor');
+      
+      const freshData = await fetchFromFreeAPI();
+      
+      if (freshData.success) {
+        return res.json({
+          success: true,
+          data: freshData.data,
+          metadata: {
+            source: 'free_api_realtime',
+            sourceName: '🟢 Ücretsiz API (Realtime)',
+            fetchedAt: new Date(),
+            cacheAge: 0,
+            isRealtime: true,
+            message: 'Güncel veri - Direkt API\'den'
+          }
+        });
+      }
+    }
+    
+    // 3. ÜCRETSİZ API ÇALIŞMIYORSA CACHE'DEN OKU
+    console.log('⚠️  Ücretsiz API çalışmıyor - Cache kullanılıyor');
+    
     const cachedPrice = await CachedPrice
       .findOne()
       .sort({ fetchedAt: -1 })
@@ -297,16 +327,18 @@ router.get('/cached', authenticateToken, async (req, res) => {
     }
 
     const now = new Date();
-    const cacheAge = (now - cachedPrice.fetchedAt) / 1000;
+    const cacheAge = Math.floor((now - cachedPrice.fetchedAt) / 1000);
 
     res.json({
       success: true,
       data: cachedPrice.prices,
       metadata: {
+        source: 'paid_api_cache',
+        sourceName: '🟡 Ücretli API (Cache)',
         fetchedAt: cachedPrice.fetchedAt,
-        cacheAge: Math.floor(cacheAge),
-        source: cachedPrice.source,
-        sourceName: cachedPrice.source === 'free_api' ? 'Ücretsiz API' : 'Ücretli API (RapidAPI)'
+        cacheAge: cacheAge,
+        isRealtime: false,
+        message: `Cache veri - ${cacheAge} saniye önce güncellendi`
       }
     });
 
@@ -319,6 +351,32 @@ router.get('/cached', authenticateToken, async (req, res) => {
     });
   }
 });
+
+/**
+ * Ücretsiz API'yi hızlı test et (3 sn timeout)
+ */
+async function testFreeAPI() {
+  try {
+    const response = await axios.get(API_CONFIG.FREE.url, {
+      timeout: 3000, // 3 saniye timeout
+      headers: {
+        'User-Agent': 'Mozilla/5.0'
+      }
+    });
+    
+    const working = !!(response.data && response.data.data);
+    
+    return {
+      working: working,
+      status: response.status
+    };
+  } catch (error) {
+    return {
+      working: false,
+      error: error.message
+    };
+  }
+}
 
 // API istatistiklerini getir (Sadece ücretli API)
 router.get('/stats', authenticateToken, async (req, res) => {
@@ -358,6 +416,134 @@ router.get('/stats', authenticateToken, async (req, res) => {
       success: false,
       message: 'İstatistikler alınamadı',
       error: error.message
+    });
+  }
+});
+
+// Vercel Cron Job için endpoint
+router.get('/cron-fetch', async (req, res) => {
+  try {
+    console.log('🔄 Cron job tetiklendi:', new Date().toISOString());
+    
+    // Vercel Cron secret kontrolü (production'da)
+    if (process.env.NODE_ENV === 'production') {
+      const authHeader = req.headers.authorization;
+      const cronSecret = process.env.CRON_SECRET || 'default-secret-change-this';
+      
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        console.warn('⚠️  Unauthorized cron request');
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Unauthorized' 
+        });
+      }
+    }
+
+    // Super Admin'i bul
+    const User = require('../models/User');
+    const superAdmin = await User.findOne({ role: 'superadmin' });
+    
+    if (!superAdmin) {
+      return res.status(500).json({
+        success: false,
+        message: 'Super Admin bulunamadı'
+      });
+    }
+
+    // Fiyatları çek
+    const result = await fetchPricesWithFallback();
+    
+    if (!result.success) {
+      throw new Error('API\'den veri alınamadı');
+    }
+
+    // Cache'e kaydet
+    const cachedPrice = new CachedPrice({
+      prices: result.data,
+      fetchedBy: superAdmin._id,
+      fetchedAt: new Date(),
+      source: result.source,
+      lastApiStatus: {
+        freeApiWorking: result.source === 'free_api',
+        paidApiWorking: result.source === 'paid_api',
+        bothApiFailed: false
+      }
+    });
+
+    await cachedPrice.save();
+
+    console.log('✅ Cron job başarılı - Kaynak:', result.source);
+
+    res.json({
+      success: true,
+      message: 'Fiyatlar başarıyla güncellendi',
+      source: result.source,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Cron job hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Uptime Robot için - Sadece ücretli API çalıştır
+router.post('/cron-fetch-paid', async (req, res) => {
+  try {
+    console.log('🤖 Uptime Robot cron tetiklendi:', new Date().toISOString());
+    
+    // 1. ÜCRETSİZ API TEST ET
+    const freeTest = await testFreeAPI();
+    
+    if (freeTest.working) {
+      console.log('✅ Ücretsiz API çalışıyor - Cron atlandı (skip)');
+      return res.json({
+        success: true,
+        message: 'Free API working - Cron skipped',
+        skipped: true,
+        freeApiStatus: 'working'
+      });
+    }
+    
+    // 2. ÜCRETSİZ API ÇALIŞMIYOR - ÜCRETLİ API'DEN ÇEK
+    console.log('⚠️  Ücretsiz API çalışmıyor - Ücretli API kullanılıyor');
+    
+    const paidResult = await fetchFromPaidAPI();
+    
+    if (!paidResult.success) {
+      throw new Error('Ücretli API başarısız: ' + paidResult.error);
+    }
+    
+    // 3. CACHE'E KAYDET
+    const cachedPrice = new CachedPrice({
+      prices: paidResult.data,
+      fetchedBy: null, // Cron job
+      fetchedAt: new Date(),
+      source: 'paid_api'
+    });
+    
+    await cachedPrice.save();
+    
+    console.log('✅ Ücretli API başarılı - Cache güncellendi');
+    
+    return res.json({
+      success: true,
+      message: 'Paid API fetched and cached',
+      source: 'paid_api',
+      timestamp: new Date().toISOString(),
+      skipped: false
+    });
+    
+  } catch (error) {
+    console.error('❌ Cron fetch hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });

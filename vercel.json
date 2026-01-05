@@ -18,5 +18,11 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cache/cron-fetch-paid",
+      "schedule": "* * * * *"
+    }
+  ]
 }
