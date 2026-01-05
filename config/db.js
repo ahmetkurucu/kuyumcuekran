@@ -1,49 +1,47 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-let cachedConnection = null;
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) throw new Error("❌ MONGODB_URI tanımlı değil.");
 
-const connectDB = async () => {
-  // Eğer zaten bağlantı varsa, onu kullan
-  if (cachedConnection && mongoose.connection.readyState === 1) {
-    console.log('✅ MongoDB - Cached connection kullanılıyor');
-    return cachedConnection;
+let cached = global._mongoose;
+if (!cached) {
+  cached = global._mongoose = { conn: null, promise: null, listeners: false };
+}
+
+async function connectDB() {
+  if (cached.conn && mongoose.connection.readyState === 1) return cached.conn;
+
+  if (!cached.promise) {
+    mongoose.set("bufferCommands", false);
+    mongoose.set("bufferTimeoutMS", 0);
+
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      maxPoolSize: 5,
+      serverSelectionTimeoutMS: 20000,
+      socketTimeoutMS: 45000,
+      family: 4
+    }).then((m) => m);
   }
 
-  try {
-    // Mongoose ayarları - Serverless için optimize
-    const options = {
-      bufferCommands: false, // Timeout'u önlemek için
-      maxPoolSize: 10, // Connection pool
-      serverSelectionTimeoutMS: 5000, // 5 saniye timeout
-      socketTimeoutMS: 45000, // Socket timeout
-      family: 4 // IPv4 kullan
-    };
+  cached.conn = await cached.promise;
 
-    // MongoDB bağlantısı
-    const conn = await mongoose.connect(process.env.MONGODB_URI, options);
-
-    cachedConnection = conn;
-    
-    console.log('✅ MongoDB bağlantısı başarılı:', conn.connection.host);
-
-    // Bağlantı hataları için listener
-    mongoose.connection.on('error', (err) => {
-      console.error('❌ MongoDB bağlantı hatası:', err);
-      cachedConnection = null;
+  if (!cached.listeners) {
+    mongoose.connection.on("error", (err) => {
+      console.error("❌ Mongo error:", err);
+      cached.conn = null;
+      cached.promise = null;
     });
 
-    mongoose.connection.on('disconnected', () => {
-      console.warn('⚠️  MongoDB bağlantısı koptu');
-      cachedConnection = null;
+    mongoose.connection.on("disconnected", () => {
+      console.warn("⚠️ Mongo disconnected");
+      cached.conn = null;
+      cached.promise = null;
     });
 
-    return conn;
-
-  } catch (error) {
-    console.error('❌ MongoDB bağlantı hatası:', error.message);
-    cachedConnection = null;
-    throw error;
+    cached.listeners = true;
   }
-};
+
+  return cached.conn;
+}
 
 module.exports = connectDB;

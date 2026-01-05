@@ -9,9 +9,8 @@ const connectDB = require('../config/db');
 // Login
 router.post('/login', async (req, res) => {
   try {
-    // MongoDB bağlantısını kontrol et
     await connectDB();
-    
+
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -75,7 +74,7 @@ router.post('/login', async (req, res) => {
 router.post('/change-password', authenticateToken, async (req, res) => {
   try {
     await connectDB();
-    
+
     const { oldPassword, newPassword } = req.body;
 
     if (!oldPassword || !newPassword) {
@@ -131,8 +130,7 @@ router.post('/change-password', authenticateToken, async (req, res) => {
 router.post('/register', authenticateToken, async (req, res) => {
   try {
     await connectDB();
-    
-    // Superadmin kontrolü
+
     if (req.user.role !== 'superadmin') {
       return res.status(403).json({
         success: false,
@@ -197,8 +195,7 @@ router.post('/register', authenticateToken, async (req, res) => {
 router.get('/users', authenticateToken, async (req, res) => {
   try {
     await connectDB();
-    
-    // Superadmin kontrolü
+
     if (req.user.role !== 'superadmin') {
       return res.status(403).json({
         success: false,
@@ -224,8 +221,7 @@ router.get('/users', authenticateToken, async (req, res) => {
 router.delete('/users/:id', authenticateToken, async (req, res) => {
   try {
     await connectDB();
-    
-    // Superadmin kontrolü
+
     if (req.user.role !== 'superadmin') {
       return res.status(403).json({
         success: false,
@@ -235,7 +231,7 @@ router.delete('/users/:id', authenticateToken, async (req, res) => {
 
     const userId = req.params.id;
     const user = await User.findByIdAndDelete(userId);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,

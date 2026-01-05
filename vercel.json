@@ -1,28 +1,9 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node"
-    }
+    { "src": "api/index.js", "use": "@vercel/node" }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "server.js"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "crons": [
-    {
-      "path": "/api/cache/cron-fetch-paid",
-      "schedule": "* * * * *"
-    }
+    { "src": "/(.*)", "dest": "/api/index.js" }
   ]
 }

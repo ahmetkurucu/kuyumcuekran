@@ -3,13 +3,15 @@ const router = express.Router();
 const Contact = require('../models/Contact');
 const { authenticateToken } = require('../middleware/auth');
 const User = require('../models/User');
+const connectDB = require('../config/db');
 
 // POST /api/contact - Yeni mesaj gönder (public)
 router.post('/', async (req, res) => {
   try {
+    await connectDB();
+
     const { name, email, phone, company, message } = req.body;
 
-    // Validasyon
     if (!name || !email || !message) {
       return res.status(400).json({
         success: false,
@@ -17,7 +19,6 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // E-posta format kontrolü
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
@@ -26,7 +27,6 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Mesaj oluştur
     const contact = new Contact({
       name: name.trim(),
       email: email.trim().toLowerCase(),
@@ -59,7 +59,8 @@ router.post('/', async (req, res) => {
 // GET /api/contact - Tüm mesajları listele (Super Admin)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    // Sadece Super Admin erişebilir
+    await connectDB();
+
     const user = await User.findById(req.user.id);
     if (!user || user.role !== 'superadmin') {
       return res.status(403).json({
@@ -69,9 +70,8 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 
     const { status, limit = 50, skip = 0 } = req.query;
-
     const query = status ? { status } : {};
-    
+
     const messages = await Contact.find(query)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
@@ -103,6 +103,8 @@ router.get('/', authenticateToken, async (req, res) => {
 // PATCH /api/contact/:id/read - Mesajı okundu olarak işaretle
 router.patch('/:id/read', authenticateToken, async (req, res) => {
   try {
+    await connectDB();
+
     const user = await User.findById(req.user.id);
     if (!user || user.role !== 'superadmin') {
       return res.status(403).json({
@@ -113,10 +115,7 @@ router.patch('/:id/read', authenticateToken, async (req, res) => {
 
     const contact = await Contact.findByIdAndUpdate(
       req.params.id,
-      { 
-        status: 'read',
-        readAt: new Date()
-      },
+      { status: 'read', readAt: new Date() },
       { new: true }
     );
 
@@ -145,6 +144,8 @@ router.patch('/:id/read', authenticateToken, async (req, res) => {
 // DELETE /api/contact/:id - Mesajı sil
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
+    await connectDB();
+
     const user = await User.findById(req.user.id);
     if (!user || user.role !== 'superadmin') {
       return res.status(403).json({

@@ -3,11 +3,13 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const User = require('../models/User');
 const CachedPrice = require('../models/CachedPrice');
+const connectDB = require('../config/db');
 
 // Admin'ler için: Cache'den fiyat al + marj ekle
 router.get('/current', authenticateToken, async (req, res) => {
   try {
-    // Kullanıcıyı bul (marjlar için)
+    await connectDB();
+
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({
@@ -16,7 +18,6 @@ router.get('/current', authenticateToken, async (req, res) => {
       });
     }
 
-    // Cache'den en son fiyatı al
     const cachedPrice = await CachedPrice
       .findOne()
       .sort({ fetchedAt: -1 })
@@ -29,13 +30,13 @@ router.get('/current', authenticateToken, async (req, res) => {
       });
     }
 
-    // API durumu kontrolü
     const apiStatus = cachedPrice.lastApiStatus || {};
-    
-    // Her iki API de çalışmıyorsa UYARI
+
     if (apiStatus.bothApiFailed) {
-      const failMinutes = Math.floor((Date.now() - new Date(apiStatus.lastFailTime)) / 60000);
-      
+      const failMinutes = apiStatus.lastFailTime
+        ? Math.floor((Date.now() - new Date(apiStatus.lastFailTime)) / 60000)
+        : null;
+
       return res.status(503).json({
         success: false,
         message: '⚠️ TÜM API\'LER ÇALIŞMIYOR!',
@@ -44,39 +45,27 @@ router.get('/current', authenticateToken, async (req, res) => {
           freeApi: 'Çalışmıyor ❌',
           paidApi: 'Çalışmıyor ❌',
           lastFailTime: apiStatus.lastFailTime,
-          failDuration: `${failMinutes} dakika önce`,
+          failDuration: failMinutes != null ? `${failMinutes} dakika önce` : null,
           warning: 'VERİ GÜNCELLENMİYOR - İŞLEM YAPMAKTAN KAÇININ!'
         }
       });
     }
 
-    // Ham fiyatları al
-    const prices = cachedPrice.prices;
-
-    // Kullanıcının marjlarını uygula
+    const prices = cachedPrice.prices || {};
     const finalPrices = {};
 
-    // Her ürün için marj uygula
     Object.keys(prices).forEach(key => {
       const parts = key.split('_');
-      const type = parts[parts.length - 1]; // alis veya satis
-      const productCode = parts.slice(0, -1).join('_'); // KULCEALTIN, AYAR22, vb.
-      
+      const type = parts[parts.length - 1]; // alis / satis
+
       const marjKey = `${key}_marj`;
       const marj = user.marjlar?.[marjKey] || 0;
 
-      if (type === 'alis') {
-        // Alış: API fiyatından marj ÇIKARILIR
-        finalPrices[key] = prices[key] - marj;
-      } else if (type === 'satis') {
-        // Satış: API fiyatına marj EKLENİR
-        finalPrices[key] = prices[key] + marj;
-      } else {
-        finalPrices[key] = prices[key];
-      }
+      if (type === 'alis') finalPrices[key] = (prices[key] || 0) - marj;
+      else if (type === 'satis') finalPrices[key] = (prices[key] || 0) + marj;
+      else finalPrices[key] = prices[key];
     });
 
-    // Veri yaşı kontrolü (5 dakikadan eskiyse uyarı)
     const cacheAgeMinutes = Math.floor((Date.now() - cachedPrice.fetchedAt) / 60000);
     const isStale = cacheAgeMinutes > 5;
 
@@ -86,9 +75,9 @@ router.get('/current', authenticateToken, async (req, res) => {
       metadata: {
         fetchedAt: cachedPrice.fetchedAt,
         cacheAge: Math.floor((Date.now() - cachedPrice.fetchedAt) / 1000),
-        cacheAgeMinutes: cacheAgeMinutes,
+        cacheAgeMinutes,
         source: cachedPrice.source,
-        isStale: isStale,
+        isStale,
         apiStatus: {
           freeApi: apiStatus.freeApiWorking ? 'Çalışıyor ✅' : 'Çalışmıyor ❌',
           paidApi: apiStatus.paidApiWorking ? 'Çalışıyor ✅' : 'Çalışmıyor ❌',
@@ -111,6 +100,8 @@ router.get('/current', authenticateToken, async (req, res) => {
 // Marj güncelleme
 router.post('/update-marj', authenticateToken, async (req, res) => {
   try {
+    await connectDB();
+
     const { code, alis_marj, satis_marj } = req.body;
 
     if (!code) {
@@ -128,9 +119,7 @@ router.post('/update-marj', authenticateToken, async (req, res) => {
       });
     }
 
-    if (!user.marjlar) {
-      user.marjlar = {};
-    }
+    if (!user.marjlar) user.marjlar = {};
 
     user.marjlar[`${code}_alis_marj`] = parseFloat(alis_marj) || 0;
     user.marjlar[`${code}_satis_marj`] = parseFloat(satis_marj) || 0;
@@ -157,6 +146,8 @@ router.post('/update-marj', authenticateToken, async (req, res) => {
 // Marjları listele
 router.get('/marjlar', authenticateToken, async (req, res) => {
   try {
+    await connectDB();
+
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({

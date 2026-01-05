@@ -1,72 +1,55 @@
 const mongoose = require('mongoose');
 
 const cachedPriceSchema = new mongoose.Schema({
-  // API'den çekilen ham fiyatlar
   prices: {
-    ALTIN_alis: Number,
-    ALTIN_satis: Number,
-    KULCEALTIN_alis: Number,
-    KULCEALTIN_satis: Number,
-    AYAR22_alis: Number,
-    AYAR22_satis: Number,
-    CEYREK_YENI_alis: Number,
-    CEYREK_YENI_satis: Number,
-    CEYREK_ESKI_alis: Number,
-    CEYREK_ESKI_satis: Number,
-    YARIM_YENI_alis: Number,
-    YARIM_YENI_satis: Number,
-    YARIM_ESKI_alis: Number,
-    YARIM_ESKI_satis: Number,
-    TEK_YENI_alis: Number,
-    TEK_YENI_satis: Number,
-    TEK_ESKI_alis: Number,
-    TEK_ESKI_satis: Number,
-    ATA_YENI_alis: Number,
-    ATA_YENI_satis: Number,
-    USDTRY_alis: Number,
-    USDTRY_satis: Number,
-    EURTRY_alis: Number,
-    EURTRY_satis: Number
+    ALTIN_alis: Number, ALTIN_satis: Number,
+    KULCEALTIN_alis: Number, KULCEALTIN_satis: Number,
+    AYAR22_alis: Number, AYAR22_satis: Number,
+    CEYREK_YENI_alis: Number, CEYREK_YENI_satis: Number,
+    CEYREK_ESKI_alis: Number, CEYREK_ESKI_satis: Number,
+    YARIM_YENI_alis: Number, YARIM_YENI_satis: Number,
+    YARIM_ESKI_alis: Number, YARIM_ESKI_satis: Number,
+    TEK_YENI_alis: Number, TEK_YENI_satis: Number,
+    TEK_ESKI_alis: Number, TEK_ESKI_satis: Number,
+    ATA_YENI_alis: Number, ATA_YENI_satis: Number,
+    USDTRY_alis: Number, USDTRY_satis: Number,
+    EURTRY_alis: Number, EURTRY_satis: Number
   },
-  
-  // Metadata
+
   fetchedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false, // ✅ cron için null olabilir
+    default: null
   },
-  
+
   fetchedAt: {
     type: Date,
     default: Date.now
   },
-  
+
   source: {
     type: String,
     default: 'haremaltin_api'
   },
-  
-  // API durumu
+
   lastApiStatus: {
     freeApiWorking: { type: Boolean, default: true },
     paidApiWorking: { type: Boolean, default: true },
     bothApiFailed: { type: Boolean, default: false },
     lastFailTime: Date
   },
-  
-  // Cache süresi
+
+  // ✅ Bu kaydı ne zaman silelim? (ör: 2 saat sonra)
   expiresAt: {
     type: Date,
-    default: () => new Date(Date.now() + 10000) // 10 saniye
+    default: () => new Date(Date.now() + 2 * 60 * 60 * 1000) // 2 saat
   }
-}, {
-  timestamps: true
-});
+}, { timestamps: true });
 
-// Index: En son fiyatı hızlı bul
 cachedPriceSchema.index({ fetchedAt: -1 });
 
-// TTL Index: Eski kayıtları otomatik sil (1 saat sonra)
-cachedPriceSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 3600 });
+// ✅ TTL: expiresAt zamanı gelince otomatik sil
+cachedPriceSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('CachedPrice', cachedPriceSchema);
