@@ -4,12 +4,7 @@
     { "src": "api/index.js", "use": "@vercel/node" }
   ],
   "routes": [
+    { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/api/index.js" }
-  ],
-  "crons": [
-    {
-      "path": "/api/cache/cron-fetch-paid",
-      "schedule": "* * * * *"
-    }
   ]
 }
