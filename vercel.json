@@ -5,5 +5,11 @@
   ],
   "routes": [
     { "src": "/(.*)", "dest": "/api/index.js" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cache/cron-fetch-paid",
+      "schedule": "* * * * *"
+    }
   ]
 }
