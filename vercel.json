@@ -5,10 +5,6 @@
   ],
   "routes": [
     { "handle": "filesystem" },
-
-    { "src": "/api/(.*)", "dest": "/api/index.js" },
-
-    { "src": "/", "dest": "/public/login.html" },
-    { "src": "/(.*)", "dest": "/public/$1" }
+    { "src": "/(.*)", "dest": "api/index.js" }
   ]
 }
