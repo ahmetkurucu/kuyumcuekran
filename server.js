@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
+const connectDB = require('./config/db');
+
 const app = express();
 
 // Middleware
@@ -49,10 +51,20 @@ app.use((err, req, res, next) => {
 module.exports = app;
 
 // ✅ Sadece LOCAL çalıştırmada dinle
-// Vercel’de asla app.listen çalıştırılmaz.
+// ✅ DB bağlanmadan listen etme (buffering timeout biter)
 if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`✅ Local server running: http://localhost:${PORT}`);
-  });
+  (async () => {
+    try {
+      await connectDB();
+      console.log('✅ MongoDB hazır');
+
+      const PORT = process.env.PORT || 3000;
+      app.listen(PORT, () => {
+        console.log(`✅ Local server running: http://localhost:${PORT}`);
+      });
+    } catch (err) {
+      console.error('❌ MongoDB bağlanamadı, server başlatılmadı:', err.message);
+      process.exit(1);
+    }
+  })();
 }

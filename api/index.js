@@ -1,6 +1,13 @@
 const app = require('../server');
+const connectDB = require('../config/db');
 
-// Vercel serverless entry
-module.exports = (req, res) => {
-  return app(req, res);
+module.exports = async (req, res) => {
+  try {
+    // DB gereken endpointler için bağlantıyı hazırla
+    await connectDB();
+    return app(req, res);
+  } catch (e) {
+    console.error('DB init error:', e.message);
+    return res.status(500).json({ success: false, message: 'DB bağlantı hatası' });
+  }
 };

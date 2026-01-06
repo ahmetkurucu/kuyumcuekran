@@ -11,7 +11,7 @@ function authenticateToken(req, res, next) {
     });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, payload) => {
     if (err) {
       return res.status(403).json({
         success: false,
@@ -19,7 +19,17 @@ function authenticateToken(req, res, next) {
       });
     }
 
-    req.user = user;
+    // ✅ id normalize: bazı tokenlarda _id gelebilir, bazıları object olabilir
+    const id = payload?.id || payload?._id;
+
+    if (!id || typeof id !== 'string') {
+      return res.status(401).json({
+        success: false,
+        message: 'Token içinde kullanıcı id yok / hatalı'
+      });
+    }
+
+    req.user = { ...payload, id };
     next();
   });
 }

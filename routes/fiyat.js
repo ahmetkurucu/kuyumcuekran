@@ -1,202 +1,26 @@
 const express = require('express');
 const router = express.Router();
-const axios = require('axios');
 const { authenticateToken } = require('../middleware/auth');
 const User = require('../models/User');
-const connectDB = require('../config/db');
+const { getPrices } = require('../services/priceService');
 
-// API Yapılandırması
-const API_CONFIG = {
-  FREE: {
-    url: 'https://canlipiyasalar.haremaltin.com/tmp/altin.json',
-    timeout: 10000
-  },
-  PAID: {
-    url: 'https://harem-altin-live-gold-price-data.p.rapidapi.com/harem_altin/prices',
-    timeout: 10000,
-    headers: {
-      'x-rapidapi-host': 'harem-altin-live-gold-price-data.p.rapidapi.com',
-      'x-rapidapi-key': process.env.RAPIDAPI_KEY
-    }
-  }
-};
-
-/**
- * RapidAPI formatını parse et
- */
-function parseRapidAPIData(dataArray) {
-  const result = {};
-  
-  const keyMapping = {
-    'GRAM ALTIN': 'KULCEALTIN',
-    '22 AYAR': 'AYAR22',
-    'YENİ ÇEYREK': 'CEYREK_YENI',
-    'ESKİ ÇEYREK': 'CEYREK_ESKI',
-    'YENİ YARIM': 'YARIM_YENI',
-    'ESKİ YARIM': 'YARIM_ESKI',
-    'YENİ TAM': 'TEK_YENI',
-    'ESKİ TAM': 'TEK_ESKI',
-    'YENİ ATA': 'ATA_YENI',
-    'Has Altın': 'ALTIN'
-  };
-  
-  dataArray.forEach(item => {
-    const mappedKey = keyMapping[item.key];
-    if (mappedKey) {
-      const buyPrice = parseFloat(item.buy.replace(/\./g, '').replace(',', '.')) || 0;
-      const sellPrice = parseFloat(item.sell.replace(/\./g, '').replace(',', '.')) || 0;
-      result[`${mappedKey}_alis`] = buyPrice;
-      result[`${mappedKey}_satis`] = sellPrice;
-    }
-  });
-  
-  result.USDTRY_alis = 0;
-  result.USDTRY_satis = 0;
-  result.EURTRY_alis = 0;
-  result.EURTRY_satis = 0;
-  
-  return result;
-}
-
-/**
- * Ücretsiz API'den veri çek
- */
-async function fetchFromFreeAPI() {
-  try {
-    const response = await axios.get(API_CONFIG.FREE.url, {
-      timeout: API_CONFIG.FREE.timeout,
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-
-    if (!response.data || !response.data.data) {
-      throw new Error('Geçersiz veri formatı');
-    }
-
-    const rawData = response.data.data;
-    const normalizedData = {};
-
-    Object.keys(rawData).forEach(key => {
-      const item = rawData[key];
-      if (item && typeof item === 'object') {
-        normalizedData[`${key}_alis`] = parseFloat(item.alis) || 0;
-        normalizedData[`${key}_satis`] = parseFloat(item.satis) || 0;
-      }
-    });
-
-    if (!normalizedData.KULCEALTIN_satis || normalizedData.KULCEALTIN_satis === 0) {
-      throw new Error('Ücretsiz API geçersiz veri döndürdü');
-    }
-
-    return {
-      success: true,
-      source: 'free_api',
-      data: normalizedData
-    };
-
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-}
-
-/**
- * Ücretli API'den veri çek
- */
-async function fetchFromPaidAPI() {
-  try {
-    const response = await axios.get(API_CONFIG.PAID.url, {
-      timeout: API_CONFIG.PAID.timeout,
-      headers: API_CONFIG.PAID.headers
-    });
-
-    if (!response.data || !response.data.data) {
-      throw new Error('Ücretli API veri döndürmedi');
-    }
-
-    const normalizedData = parseRapidAPIData(response.data.data);
-    
-    // TCMB döviz kurları
-    try {
-      const xml2js = require('xml2js');
-      const tcmbResponse = await axios.get('https://www.tcmb.gov.tr/kurlar/today.xml', { timeout: 5000 });
-      const parser = new xml2js.Parser();
-      const result = await parser.parseStringPromise(tcmbResponse.data);
-      const currencies = result.Tarih_Date.Currency;
-      
-      const usd = currencies.find(c => c.$.CurrencyCode === 'USD');
-      if (usd) {
-        normalizedData.USDTRY_alis = parseFloat(usd.ForexBuying?.[0]) || 0;
-        normalizedData.USDTRY_satis = parseFloat(usd.ForexSelling?.[0]) || 0;
-      }
-      
-      const eur = currencies.find(c => c.$.CurrencyCode === 'EUR');
-      if (eur) {
-        normalizedData.EURTRY_alis = parseFloat(eur.ForexBuying?.[0]) || 0;
-        normalizedData.EURTRY_satis = parseFloat(eur.ForexSelling?.[0]) || 0;
-      }
-    } catch (tcmbError) {
-      console.warn('⚠️  TCMB hatası:', tcmbError.message);
-    }
-
-    return {
-      success: true,
-      source: 'paid_api',
-      data: normalizedData
-    };
-
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-}
-
-/**
- * HER REQUEST'TE DİREKT ÇEK
- * Serverless uyumlu - Her kullanıcı kendi çeker
- */
+// ✅ 1) GÜNCEL FİYAT: Ücretsiz 15sn, ücretsiz bozulursa ücretli 30sn TTL
 router.get('/current', authenticateToken, async (req, res) => {
   try {
-    await connectDB();
-
+    // Kullanıcıyı bul (marjlar için)
     const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Kullanıcı bulunamadı'
-      });
+      return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
     }
 
-    console.log('🔄 Fiyatlar çekiliyor (direkt)...');
-
-    // 1. Önce ücretsiz API dene
-    let result = await fetchFromFreeAPI();
-    
-    // 2. Başarısızsa ücretli API'ye geç
-    if (!result.success) {
-      console.log('⚠️  Ücretsiz API başarısız, ücretli API deneniyor...');
-      result = await fetchFromPaidAPI();
-    }
-
-    if (!result.success) {
-      return res.status(503).json({
-        success: false,
-        message: 'Hiçbir API\'den veri alınamadı',
-        error: result.error
-      });
-    }
-
+    const result = await getPrices(); // free->paid fallback + TTL
     const prices = result.data;
-    const finalPrices = {};
 
-    // Marjları uygula
+    // Marj uygula
+    const finalPrices = {};
     Object.keys(prices).forEach(key => {
       const parts = key.split('_');
-      const type = parts[parts.length - 1];
-
+      const type = parts[parts.length - 1]; // alis / satis
       const marjKey = `${key}_marj`;
       const marj = user.marjlar?.[marjKey] || 0;
 
@@ -205,103 +29,74 @@ router.get('/current', authenticateToken, async (req, res) => {
       else finalPrices[key] = prices[key];
     });
 
-    console.log(`✅ Fiyatlar döndürüldü (${result.source})`);
-
-    res.json({
+    return res.json({
       success: true,
       data: finalPrices,
       metadata: {
-        source: result.source,
-        sourceName: result.source === 'free_api' 
-          ? '🟢 Ücretsiz API (Realtime)' 
-          : '🟡 Ücretli API (Realtime)',
-        fetchedAt: new Date(),
-        isRealtime: true,
-        message: 'Direkt API\'den çekildi - Her request taze veri'
+        source: result.source === 'free' ? 'ÜCRETSİZ API' : 'ÜCRETLİ API (RapidAPI)',
+        refreshPolicy: result.source === 'free' ? '15 saniye' : '30 saniye',
+        cached: result.cached,
+        cacheAgeSeconds: Math.floor(result.cacheAgeMs / 1000),
+        ttlSeconds: Math.floor(result.ttlMs / 1000)
       }
     });
-
-  } catch (error) {
-    console.error('❌ Fiyat getirme hatası:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Fiyatlar alınırken hata oluştu',
-      error: error.message
-    });
+  } catch (err) {
+    console.error('Fiyat current hatası:', err);
+    return res.status(500).json({ success: false, message: 'Fiyat alınamadı', error: err.message });
   }
 });
 
-// Marj güncelleme
+
+// ✅ 2) MARJLARI GETİR (Admin panel bunu istiyor)
+router.get('/marjlar', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
+    }
+
+    return res.json({
+      success: true,
+      data: user.marjlar || {}
+    });
+  } catch (err) {
+    console.error('Marjlar getirme hatası:', err);
+    return res.status(500).json({ success: false, message: 'Marjlar alınamadı', error: err.message });
+  }
+});
+
+
+// ✅ 3) MARJ GÜNCELLE (Admin panel bunu kullanıyor)
 router.post('/update-marj', authenticateToken, async (req, res) => {
   try {
-    await connectDB();
-
     const { code, alis_marj, satis_marj } = req.body;
 
     if (!code) {
-      return res.status(400).json({
-        success: false,
-        message: 'Ürün kodu gerekli'
-      });
+      return res.status(400).json({ success: false, message: 'Ürün kodu gerekli' });
     }
 
     const user = await User.findById(req.user.id);
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Kullanıcı bulunamadı'
-      });
+      return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
     }
 
     if (!user.marjlar) user.marjlar = {};
 
     user.marjlar[`${code}_alis_marj`] = parseFloat(alis_marj) || 0;
     user.marjlar[`${code}_satis_marj`] = parseFloat(satis_marj) || 0;
+    user.marjlar.last_update = new Date();
 
     user.markModified('marjlar');
     await user.save();
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Marj başarıyla güncellendi',
       marjlar: user.marjlar
     });
-
-  } catch (error) {
-    console.error('Marj güncelleme hatası:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Marj güncellenirken hata oluştu',
-      error: error.message
-    });
-  }
-});
-
-// Marjları listele
-router.get('/marjlar', authenticateToken, async (req, res) => {
-  try {
-    await connectDB();
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Kullanıcı bulunamadı'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: user.marjlar || {}
-    });
-
-  } catch (error) {
-    console.error('Marj listeleme hatası:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Marjlar alınamadı',
-      error: error.message
-    });
+  } catch (err) {
+    console.error('Marj güncelleme hatası:', err);
+    return res.status(500).json({ success: false, message: 'Marj güncellenemedi', error: err.message });
   }
 });
 
