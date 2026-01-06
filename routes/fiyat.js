@@ -1,72 +1,78 @@
 const express = require('express');
 const router = express.Router();
+
 const { authenticateToken } = require('../middleware/auth');
+const connectDB = require('../config/db');
 const User = require('../models/User');
 const { getPrices } = require('../services/priceService');
 
-// ✅ 1) GÜNCEL FİYAT: Ücretsiz 15sn, ücretsiz bozulursa ücretli 30sn TTL
+// ✅ Bu router’daki tüm endpointler Mongo kullanıyor (marj okumak/yazmak için)
+router.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (e) {
+    console.error('❌ DB bağlantı hatası (fiyat router):', e.message);
+    return res.status(500).json({ success: false, message: 'DB bağlantı hatası' });
+  }
+});
+
+// Admin'ler için: API’den fiyat al + Mongo’daki marjı uygula
 router.get('/current', authenticateToken, async (req, res) => {
   try {
-    // Kullanıcıyı bul (marjlar için)
-    const user = await User.findById(req.user.id);
+    // 1) Fiyatları API’den al (Mongo yok)
+    const result = await getPrices();
+
+    // 2) Kullanıcının marjını Mongo’dan oku
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Token kullanıcı id yok' });
+    }
+
+    const user = await User.findById(userId).lean();
     if (!user) {
       return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
     }
 
-    const result = await getPrices(); // free->paid fallback + TTL
-    const prices = result.data;
+    const marjlar = user.marjlar || {};
+    const raw = result.data;
 
-    // Marj uygula
+    // 3) Marj uygula
     const finalPrices = {};
-    Object.keys(prices).forEach(key => {
+    for (const key of Object.keys(raw)) {
       const parts = key.split('_');
-      const type = parts[parts.length - 1]; // alis / satis
-      const marjKey = `${key}_marj`;
-      const marj = user.marjlar?.[marjKey] || 0;
+      const type = parts[parts.length - 1]; // alis/satis
 
-      if (type === 'alis') finalPrices[key] = (prices[key] || 0) - marj;
-      else if (type === 'satis') finalPrices[key] = (prices[key] || 0) + marj;
-      else finalPrices[key] = prices[key];
-    });
+      const marjKey = `${key}_marj`; // KULCEALTIN_satis_marj gibi
+      const marj = Number(marjlar[marjKey]) || 0;
+
+      if (type === 'alis') finalPrices[key] = (raw[key] || 0) - marj;
+      else if (type === 'satis') finalPrices[key] = (raw[key] || 0) + marj;
+      else finalPrices[key] = raw[key];
+    }
 
     return res.json({
       success: true,
       data: finalPrices,
       metadata: {
-        source: result.source === 'free' ? 'ÜCRETSİZ API' : 'ÜCRETLİ API (RapidAPI)',
-        refreshPolicy: result.source === 'free' ? '15 saniye' : '30 saniye',
+        source: result.source === 'free' ? 'FREE_API' : 'PAID_API',
+        refreshPolicy: result.source === 'free' ? '15s' : '30s',
         cached: result.cached,
         cacheAgeSeconds: Math.floor(result.cacheAgeMs / 1000),
-        ttlSeconds: Math.floor(result.ttlMs / 1000)
+        ttlSeconds: Math.floor(result.ttlMs / 1000),
       }
     });
-  } catch (err) {
-    console.error('Fiyat current hatası:', err);
-    return res.status(500).json({ success: false, message: 'Fiyat alınamadı', error: err.message });
-  }
-});
-
-
-// ✅ 2) MARJLARI GETİR (Admin panel bunu istiyor)
-router.get('/marjlar', authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
-    }
-
-    return res.json({
-      success: true,
-      data: user.marjlar || {}
+  } catch (error) {
+    console.error('Fiyat current hatası:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Fiyatlar alınırken hata oluştu',
+      error: error.message
     });
-  } catch (err) {
-    console.error('Marjlar getirme hatası:', err);
-    return res.status(500).json({ success: false, message: 'Marjlar alınamadı', error: err.message });
   }
 });
 
-
-// ✅ 3) MARJ GÜNCELLE (Admin panel bunu kullanıyor)
+// Marj güncelleme (Mongo şart)
 router.post('/update-marj', authenticateToken, async (req, res) => {
   try {
     const { code, alis_marj, satis_marj } = req.body;
@@ -76,27 +82,33 @@ router.post('/update-marj', authenticateToken, async (req, res) => {
     }
 
     const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
-    }
+    if (!user) return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
 
     if (!user.marjlar) user.marjlar = {};
 
-    user.marjlar[`${code}_alis_marj`] = parseFloat(alis_marj) || 0;
-    user.marjlar[`${code}_satis_marj`] = parseFloat(satis_marj) || 0;
-    user.marjlar.last_update = new Date();
+    user.marjlar[`${code}_alis_marj`] = Number(alis_marj) || 0;
+    user.marjlar[`${code}_satis_marj`] = Number(satis_marj) || 0;
 
     user.markModified('marjlar');
     await user.save();
 
-    return res.json({
-      success: true,
-      message: 'Marj başarıyla güncellendi',
-      marjlar: user.marjlar
-    });
-  } catch (err) {
-    console.error('Marj güncelleme hatası:', err);
-    return res.status(500).json({ success: false, message: 'Marj güncellenemedi', error: err.message });
+    return res.json({ success: true, message: 'Marj başarıyla güncellendi', marjlar: user.marjlar });
+  } catch (error) {
+    console.error('Marj güncelleme hatası:', error);
+    return res.status(500).json({ success: false, message: 'Marj güncellenirken hata oluştu', error: error.message });
+  }
+});
+
+// Marjları listele (Mongo şart)
+router.get('/marjlar', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).lean();
+    if (!user) return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
+
+    return res.json({ success: true, data: user.marjlar || {} });
+  } catch (error) {
+    console.error('Marj listeleme hatası:', error);
+    return res.status(500).json({ success: false, message: 'Marjlar alınamadı', error: error.message });
   }
 });
 
