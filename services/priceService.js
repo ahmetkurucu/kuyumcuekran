@@ -3,13 +3,13 @@ const axios = require('axios');
 const FREE_URL = 'https://canlipiyasalar.haremaltin.com/tmp/altin.json';
 const PAID_URL = 'https://harem-altin-live-gold-price-data.p.rapidapi.com/harem_altin/prices';
 
-// Memory cache (serverless instance içinde çalışır)
+// Memory cache (Vercel instance içinde)
 const state = {
   lastData: null,
   lastAt: 0,
   lastSource: null,
   lastTtlMs: 0,
-  lastFreeFailAt: 0, // free bozulduysa bir süre free denemeyi azaltmak için
+  lastFreeFailAt: 0
 };
 
 function parseFree(resp) {
@@ -26,7 +26,6 @@ function parseFree(resp) {
   }
   if (!out.KULCEALTIN_satis) throw new Error('Free API geçersiz veri');
 
-  // döviz yoksa 0
   out.USDTRY_alis ||= 0; out.USDTRY_satis ||= 0;
   out.EURTRY_alis ||= 0; out.EURTRY_satis ||= 0;
 
@@ -87,16 +86,10 @@ async function fetchPaid() {
   return parsePaid(r.data?.data);
 }
 
-/**
- * İSTENEN KURAL:
- * - Free çalışıyorsa: 15 sn cache
- * - Free bozulursa: Paid’a geç, 30 sn cache
- * - Free bozulduktan sonra 60 sn boyunca free denemeyi azalt (RapidAPI israfını azaltır)
- */
 async function getPrices() {
   const now = Date.now();
 
-  // TTL dolmadıysa cache dön
+  // TTL dolmadıysa cache
   if (state.lastData && (now - state.lastAt) < state.lastTtlMs) {
     return {
       source: state.lastSource,
@@ -110,7 +103,6 @@ async function getPrices() {
   // Free bozulduysa 60 sn free denemeyi azalt
   const canTryFree = (now - state.lastFreeFailAt) > 60000;
 
-  // 1) Free dene
   if (canTryFree) {
     try {
       const data = await fetchFree();
@@ -121,11 +113,9 @@ async function getPrices() {
       return { source: 'free', data, cached: false, cacheAgeMs: 0, ttlMs: 15000 };
     } catch (e) {
       state.lastFreeFailAt = now;
-      // paid’a düş
     }
   }
 
-  // 2) Paid dene
   const data = await fetchPaid();
   state.lastData = data;
   state.lastAt = now;
