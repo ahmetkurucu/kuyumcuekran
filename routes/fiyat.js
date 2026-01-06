@@ -5,29 +5,14 @@ const { authenticateToken } = require('../middleware/auth');
 const User = require('../models/User');
 const connectDB = require('../config/db');
 
-// ===================================
-// MEMORY CACHE - MongoDB YOK!
-// ===================================
-let priceCache = {
-  data: null,
-  lastFetch: null,
-  source: null,
-  error: null
-};
-
-let fetchInterval = null;
-let currentApiType = 'free'; // 'free' veya 'paid'
-
 // API Yapılandırması
 const API_CONFIG = {
   FREE: {
     url: 'https://canlipiyasalar.haremaltin.com/tmp/altin.json',
-    interval: 15000, // 15 saniye
     timeout: 10000
   },
   PAID: {
     url: 'https://harem-altin-live-gold-price-data.p.rapidapi.com/harem_altin/prices',
-    interval: 30000, // 30 saniye
     timeout: 10000,
     headers: {
       'x-rapidapi-host': 'harem-altin-live-gold-price-data.p.rapidapi.com',
@@ -37,7 +22,7 @@ const API_CONFIG = {
 };
 
 /**
- * RapidAPI array formatını parse et
+ * RapidAPI formatını parse et
  */
 function parseRapidAPIData(dataArray) {
   const result = {};
@@ -74,12 +59,10 @@ function parseRapidAPIData(dataArray) {
 }
 
 /**
- * ÜCRETSİZ API'den veri çek
+ * Ücretsiz API'den veri çek
  */
 async function fetchFromFreeAPI() {
   try {
-    console.log('🔄 Ücretsiz API\'den çekiliyor...');
-    
     const response = await axios.get(API_CONFIG.FREE.url, {
       timeout: API_CONFIG.FREE.timeout,
       headers: { 'User-Agent': 'Mozilla/5.0' }
@@ -104,31 +87,25 @@ async function fetchFromFreeAPI() {
       throw new Error('Ücretsiz API geçersiz veri döndürdü');
     }
 
-    // Memory cache'e kaydet
-    priceCache = {
-      data: normalizedData,
-      lastFetch: new Date(),
+    return {
+      success: true,
       source: 'free_api',
-      error: null
+      data: normalizedData
     };
 
-    console.log(`✅ Ücretsiz API başarılı - Gram: ₺${normalizedData.KULCEALTIN_satis}`);
-    return true;
-
   } catch (error) {
-    console.error('❌ Ücretsiz API hatası:', error.message);
-    priceCache.error = error.message;
-    return false;
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 /**
- * ÜCRETLİ API'den veri çek
+ * Ücretli API'den veri çek
  */
 async function fetchFromPaidAPI() {
   try {
-    console.log('🔄 Ücretli API\'den çekiliyor...');
-    
     const response = await axios.get(API_CONFIG.PAID.url, {
       timeout: API_CONFIG.PAID.timeout,
       headers: API_CONFIG.PAID.headers
@@ -140,7 +117,7 @@ async function fetchFromPaidAPI() {
 
     const normalizedData = parseRapidAPIData(response.data.data);
     
-    // TCMB döviz kurları (opsiyonel)
+    // TCMB döviz kurları
     try {
       const xml2js = require('xml2js');
       const tcmbResponse = await axios.get('https://www.tcmb.gov.tr/kurlar/today.xml', { timeout: 5000 });
@@ -163,102 +140,23 @@ async function fetchFromPaidAPI() {
       console.warn('⚠️  TCMB hatası:', tcmbError.message);
     }
 
-    // Memory cache'e kaydet
-    priceCache = {
-      data: normalizedData,
-      lastFetch: new Date(),
+    return {
+      success: true,
       source: 'paid_api',
-      error: null
+      data: normalizedData
     };
 
-    console.log(`✅ Ücretli API başarılı - Gram: ₺${normalizedData.KULCEALTIN_satis}`);
-    return true;
-
   } catch (error) {
-    console.error('❌ Ücretli API hatası:', error.message);
-    priceCache.error = error.message;
-    return false;
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
 /**
- * Otomatik fetch sistemi başlat
- */
-async function startAutoFetch() {
-  console.log('\n🚀 OTOMATİK FETCH BAŞLATILDI');
-  console.log('==========================================');
-  
-  // İlk fetch
-  const freeSuccess = await fetchFromFreeAPI();
-  
-  if (freeSuccess) {
-    currentApiType = 'free';
-    console.log('📋 Mod: ÜCRETSİZ API (15 saniye aralık)');
-  } else {
-    currentApiType = 'paid';
-    await fetchFromPaidAPI();
-    console.log('📋 Mod: ÜCRETLİ API (30 saniye aralık)');
-  }
-  
-  // Interval başlat
-  scheduleFetch();
-  
-  // Her 5 dakikada bir API tipini kontrol et
-  setInterval(async () => {
-    if (currentApiType === 'paid') {
-      // Ücretsiz API'yi tekrar test et
-      const freeTest = await fetchFromFreeAPI();
-      if (freeTest) {
-        console.log('✅ Ücretsiz API tekrar çalışıyor - Geçiş yapılıyor');
-        currentApiType = 'free';
-        scheduleFetch(); // Interval'i yeniden ayarla
-      }
-    }
-  }, 5 * 60 * 1000); // 5 dakika
-}
-
-/**
- * Fetch'i zamanla
- */
-function scheduleFetch() {
-  // Eski interval'i temizle
-  if (fetchInterval) {
-    clearInterval(fetchInterval);
-  }
-  
-  const interval = API_CONFIG[currentApiType === 'free' ? 'FREE' : 'PAID'].interval;
-  
-  fetchInterval = setInterval(async () => {
-    if (currentApiType === 'free') {
-      const success = await fetchFromFreeAPI();
-      
-      // Ücretsiz API başarısız olursa ücretli API'ye geç
-      if (!success) {
-        console.log('⚠️  Ücretsiz API başarısız - Ücretli API\'ye geçiliyor');
-        currentApiType = 'paid';
-        await fetchFromPaidAPI();
-        scheduleFetch(); // 30 saniye aralığa geç
-      }
-    } else {
-      await fetchFromPaidAPI();
-    }
-  }, interval);
-  
-  console.log(`⏰ Fetch planlandı: Her ${interval / 1000} saniye`);
-}
-
-// Sunucu başlangıcında fetch'i başlat (sadece production)
-if (process.env.NODE_ENV !== 'test') {
-  setTimeout(startAutoFetch, 2000); // 2 saniye bekle
-}
-
-// ===================================
-// API ENDPOINTS
-// ===================================
-
-/**
- * Kullanıcılar için fiyat endpoint'i
- * Memory cache'den okur (MongoDB yok!)
+ * HER REQUEST'TE DİREKT ÇEK
+ * Serverless uyumlu - Her kullanıcı kendi çeker
  */
 router.get('/current', authenticateToken, async (req, res) => {
   try {
@@ -272,16 +170,26 @@ router.get('/current', authenticateToken, async (req, res) => {
       });
     }
 
-    // Memory cache kontrolü
-    if (!priceCache.data) {
+    console.log('🔄 Fiyatlar çekiliyor (direkt)...');
+
+    // 1. Önce ücretsiz API dene
+    let result = await fetchFromFreeAPI();
+    
+    // 2. Başarısızsa ücretli API'ye geç
+    if (!result.success) {
+      console.log('⚠️  Ücretsiz API başarısız, ücretli API deneniyor...');
+      result = await fetchFromPaidAPI();
+    }
+
+    if (!result.success) {
       return res.status(503).json({
         success: false,
-        message: 'Fiyat verisi henüz yüklenmedi. Lütfen birkaç saniye bekleyin.',
-        error: priceCache.error
+        message: 'Hiçbir API\'den veri alınamadı',
+        error: result.error
       });
     }
 
-    const prices = priceCache.data;
+    const prices = result.data;
     const finalPrices = {};
 
     // Marjları uygula
@@ -297,28 +205,24 @@ router.get('/current', authenticateToken, async (req, res) => {
       else finalPrices[key] = prices[key];
     });
 
-    const cacheAge = priceCache.lastFetch 
-      ? Math.floor((Date.now() - priceCache.lastFetch) / 1000)
-      : null;
+    console.log(`✅ Fiyatlar döndürüldü (${result.source})`);
 
     res.json({
       success: true,
       data: finalPrices,
       metadata: {
-        source: priceCache.source,
-        sourceName: priceCache.source === 'free_api' 
-          ? '🟢 Ücretsiz API' 
-          : '🟡 Ücretli API',
-        fetchedAt: priceCache.lastFetch,
-        cacheAge: cacheAge,
-        refreshInterval: currentApiType === 'free' ? '15 saniye' : '30 saniye',
-        isRealtime: cacheAge < 20,
-        message: `${cacheAge} saniye önce güncellendi`
+        source: result.source,
+        sourceName: result.source === 'free_api' 
+          ? '🟢 Ücretsiz API (Realtime)' 
+          : '🟡 Ücretli API (Realtime)',
+        fetchedAt: new Date(),
+        isRealtime: true,
+        message: 'Direkt API\'den çekildi - Her request taze veri'
       }
     });
 
   } catch (error) {
-    console.error('Fiyat getirme hatası:', error);
+    console.error('❌ Fiyat getirme hatası:', error);
     res.status(500).json({
       success: false,
       message: 'Fiyatlar alınırken hata oluştu',
