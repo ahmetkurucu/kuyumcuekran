@@ -24,12 +24,11 @@ const API_CONFIG = {
 };
 
 // ---------- HELPERS ----------
+// ✅ ÜCRETSİZ API için: "3.245,12" -> 3245.12  (DOKUNMADIK)
 function parseMoney(v) {
-  // sayı gelirse direkt
   if (typeof v === 'number') return v;
   if (v == null) return 0;
 
-  // string: "3.245,12" -> 3245.12
   const s = String(v).trim();
   if (!s) return 0;
 
@@ -38,8 +37,71 @@ function parseMoney(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// ✅ SADECE ÜCRETLİ API için: hem "3.245,12" hem "3,245.12" hem "3245.12"
+function parseMoneyPaid(v) {
+  if (typeof v === 'number') return v;
+  if (v == null) return 0;
+
+  const s = String(v).trim();
+  if (!s) return 0;
+
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+
+  // hem , hem . varsa son gelen ayırıcı decimal kabul edilir
+  if (hasComma && hasDot) {
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    if (lastDot > lastComma) {
+      // "1,234.56" -> remove commas
+      const x = s.replace(/,/g, '');
+      const n = parseFloat(x);
+      return Number.isFinite(n) ? n : 0;
+    } else {
+      // "1.234,56" -> remove dots, comma -> dot
+      const x = s.replace(/\./g, '').replace(',', '.');
+      const n = parseFloat(x);
+      return Number.isFinite(n) ? n : 0;
+    }
+  }
+
+  // sadece virgül varsa
+  if (hasComma && !hasDot) {
+    const lastComma = s.lastIndexOf(',');
+    const digitsAfter = s.length - lastComma - 1;
+    // "1,234" gibi binlikse virgülü sil
+    if (digitsAfter === 3) {
+      const x = s.replace(/,/g, '');
+      const n = parseFloat(x);
+      return Number.isFinite(n) ? n : 0;
+    }
+    // "1234,56" gibi decimal ise virgülü dot yap
+    const x = s.replace(',', '.');
+    const n = parseFloat(x);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  // sadece nokta varsa
+  if (hasDot && !hasComma) {
+    const lastDot = s.lastIndexOf('.');
+    const digitsAfter = s.length - lastDot - 1;
+    // "1.234" binlik olma ihtimali -> sil
+    if (digitsAfter === 3 && s.length > 4) {
+      const x = s.replace(/\./g, '');
+      const n = parseFloat(x);
+      return Number.isFinite(n) ? n : 0;
+    }
+    // normal decimal
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  // düz sayı
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : 0;
+}
+
 function parseFreeData(raw) {
-  // raw: response.data.data (object)
   const out = {};
   Object.keys(raw || {}).forEach((key) => {
     const item = raw[key];
@@ -51,51 +113,106 @@ function parseFreeData(raw) {
   return out;
 }
 
+// ✅ TCMB today.xml -> USD/EUR
+async function fetchTcmRates() {
+  const r = await axios.get('https://www.tcmb.gov.tr/kurlar/today.xml', { timeout: 5000 });
+  const xml = String(r.data || '');
+
+  function pickCurrencyBlock(code) {
+    const re = new RegExp(`<Currency[^>]*CurrencyCode="${code}"[\\s\\S]*?<\\/Currency>`, 'i');
+    const m = xml.match(re);
+    return m ? m[0] : '';
+  }
+
+  function pickTag(block, tag) {
+    const re = new RegExp(`<${tag}>([^<]+)<\\/${tag}>`, 'i');
+    const m = block.match(re);
+    return m ? m[1] : null;
+  }
+
+  const usdBlock = pickCurrencyBlock('USD');
+  const eurBlock = pickCurrencyBlock('EUR');
+
+  const usdBuy = parseFloat(pickTag(usdBlock, 'ForexBuying') || '0') || 0;
+  const usdSell = parseFloat(pickTag(usdBlock, 'ForexSelling') || '0') || 0;
+
+  const eurBuy = parseFloat(pickTag(eurBlock, 'ForexBuying') || '0') || 0;
+  const eurSell = parseFloat(pickTag(eurBlock, 'ForexSelling') || '0') || 0;
+
+  return {
+    USDTRY_alis: usdBuy,
+    USDTRY_satis: usdSell,
+    EURTRY_alis: eurBuy,
+    EURTRY_satis: eurSell
+  };
+}
+
+// ✅ ÜCRETLİ RapidAPI parse: KG ise grama çevir (÷1000)
 function parseRapidAPIData(arr) {
-  // arr: response.data.data (array)
   const out = {};
 
-  // KEY’leri uppercase eşleştir (RapidAPI bazen farklı yazıyor)
   const keyMapping = {
     'GRAM ALTIN': 'KULCEALTIN',
     'KÜLÇE ALTIN': 'KULCEALTIN',
+    'KULCE ALTIN': 'KULCEALTIN',
+
     '22 AYAR': 'AYAR22',
+
     'YENİ ÇEYREK': 'CEYREK_YENI',
     'ESKİ ÇEYREK': 'CEYREK_ESKI',
     'YENI CEYREK': 'CEYREK_YENI',
     'ESKI CEYREK': 'CEYREK_ESKI',
+
     'YENİ YARIM': 'YARIM_YENI',
     'ESKİ YARIM': 'YARIM_ESKI',
     'YENI YARIM': 'YARIM_YENI',
     'ESKI YARIM': 'YARIM_ESKI',
+
     'YENİ TAM': 'TEK_YENI',
     'ESKİ TAM': 'TEK_ESKI',
     'YENI TAM': 'TEK_YENI',
     'ESKI TAM': 'TEK_ESKI',
+
     'YENİ ATA': 'ATA_YENI',
     'YENI ATA': 'ATA_YENI',
+
     'HAS ALTIN': 'ALTIN',
-    'HAS ALTIN (TL)': 'ALTIN',
     'HAS': 'ALTIN'
   };
 
   (arr || []).forEach((item) => {
-    const k = String(item?.key || '').toUpperCase().trim();
-    const mapped = keyMapping[k];
+    let kRaw = String(item?.key || '').toUpperCase().trim();
+    if (!kRaw) return;
+
+    // parantez içlerini temizle: "HAS ALTIN (KG)" -> "HAS ALTIN"
+    const kNoParens = kRaw.replace(/\([^)]*\)/g, '').trim();
+
+    // KG kontrolü (RapidAPI bazen KG fiyatı döndürüyor)
+    const isKg =
+      /\bKG\b/.test(kRaw) ||
+      kRaw.includes('KILOGRAM') ||
+      kRaw.includes('KİLOGRAM');
+
+    const mapped = keyMapping[kNoParens] || keyMapping[kRaw];
     if (!mapped) return;
 
-    const buy = parseMoney(item.buy);
-    const sell = parseMoney(item.sell);
+    const buy = parseMoneyPaid(item.buy);
+    const sell = parseMoneyPaid(item.sell);
 
-    out[`${mapped}_alis`] = buy;
-    out[`${mapped}_satis`] = sell;
+    // KG ise grama çevir
+    const scale = isKg ? 1 / 1000 : 1;
+
+    // Not: Aynı ürün hem KG hem normal gelirse; normal (gram) genelde daha doğru
+    // Biz KG'yi de yazıyoruz ama sonra normal gelirse üstüne yazar.
+    out[`${mapped}_alis`] = buy * scale;
+    out[`${mapped}_satis`] = sell * scale;
   });
 
-  // döviz alanları yoksa 0 (istersen sonra eklersin)
-  out.USDTRY_alis = out.USDTRY_alis || 0;
-  out.USDTRY_satis = out.USDTRY_satis || 0;
-  out.EURTRY_alis = out.EURTRY_alis || 0;
-  out.EURTRY_satis = out.EURTRY_satis || 0;
+  // dövizler ücretli modda TCMB’den set edilecek (burada 0)
+  out.USDTRY_alis = 0;
+  out.USDTRY_satis = 0;
+  out.EURTRY_alis = 0;
+  out.EURTRY_satis = 0;
 
   return out;
 }
@@ -109,7 +226,6 @@ async function fetchFromFreeAPI() {
   if (!r.data || !r.data.data) throw new Error('Free API formatı bozuk');
   const normalized = parseFreeData(r.data.data);
 
-  // minimal doğrulama
   if (!normalized.KULCEALTIN_satis || normalized.KULCEALTIN_satis === 0) {
     throw new Error('Free API geçersiz fiyat döndürdü');
   }
@@ -124,11 +240,21 @@ async function fetchFromPaidAPI() {
   });
 
   if (!r.data || !r.data.data) throw new Error('Paid API veri döndürmedi');
+
   const normalized = parseRapidAPIData(r.data.data);
 
-  // minimal doğrulama
+  // ✅ ÜCRETLİ modda USD/EUR TCMB’den
+  try {
+    const fx = await fetchTcmRates();
+    normalized.USDTRY_alis = fx.USDTRY_alis;
+    normalized.USDTRY_satis = fx.USDTRY_satis;
+    normalized.EURTRY_alis = fx.EURTRY_alis;
+    normalized.EURTRY_satis = fx.EURTRY_satis;
+  } catch (e) {
+    // TCMB patlarsa, 0 bırak (sistemi düşürme)
+  }
+
   if (!normalized.KULCEALTIN_satis || normalized.KULCEALTIN_satis === 0) {
-    // RapidAPI’den farklı key geliyorsa burada patlar
     throw new Error('Paid API parse edilemedi (key eşleşmedi)');
   }
 
@@ -155,13 +281,12 @@ function applyMarj(user, basePrices) {
 
 // -----------------------------------------------------
 // GET /api/fiyat/current
-// - Free çalışıyorsa realtime döner (15 sn polling senin tarafta)
-// - Free yoksa Paid’e geçer, ama RapidAPI’yi korumak için:
+// - Free çalışıyorsa realtime döner
+// - Free yoksa Paid’e geçer:
 //   Mongo cache 30 sn’den gençse onu döner,
 //   30 sn’den eskiyse paid çekip cache günceller ve döner.
 // -----------------------------------------------------
 router.get('/current', authenticateToken, async (req, res) => {
-  // Vercel / tarayıcı cache’ini kır
   res.setHeader('Cache-Control', 'no-store, max-age=0');
 
   try {
@@ -170,7 +295,7 @@ router.get('/current', authenticateToken, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
     }
 
-    // 1) FREE dene (hızlı timeout)
+    // 1) FREE dene (DOKUNMADIK)
     try {
       const freeData = await fetchFromFreeAPI();
       const finalPrices = applyMarj(user, freeData);
@@ -186,7 +311,7 @@ router.get('/current', authenticateToken, async (req, res) => {
         }
       });
     } catch (e) {
-      // free patladı -> paid’e düş
+      // free patladı -> paid
     }
 
     // 2) PAID modunda: önce cache kontrol et
@@ -213,8 +338,7 @@ router.get('/current', authenticateToken, async (req, res) => {
     // 3) Cache yok / eski -> paid çek
     const paidData = await fetchFromPaidAPI();
 
-    // paid’i mongo’ya kaydet (marj yönetimi mongo zaten var)
-    // fetchedBy schema required olduğu için kullanıcı id ile kaydediyoruz
+    // paid’i mongo’ya kaydet
     const doc = await CachedPrice.create({
       prices: paidData,
       fetchedBy: user._id,
@@ -238,10 +362,10 @@ router.get('/current', authenticateToken, async (req, res) => {
         sourceName: '🟡 Ücretli API (Realtime)',
         fetchedAt: doc.fetchedAt,
         cacheAge: 0,
-        refreshHint: '30sn'
+        refreshHint: '30sn',
+        fxSource: 'TCMB'
       }
     });
-
   } catch (error) {
     console.error('Fiyat getirme hatası:', error);
     return res.status(500).json({
@@ -249,39 +373,6 @@ router.get('/current', authenticateToken, async (req, res) => {
       message: 'Fiyatlar alınırken hata oluştu',
       error: error.message
     });
-  }
-});
-
-// Marj güncelleme / listeleme (senin mevcut mantık kalsın)
-router.post('/update-marj', authenticateToken, async (req, res) => {
-  try {
-    const { code, alis_marj, satis_marj } = req.body;
-    if (!code) return res.status(400).json({ success: false, message: 'Ürün kodu gerekli' });
-
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
-
-    if (!user.marjlar) user.marjlar = {};
-
-    user.marjlar[`${code}_alis_marj`] = parseMoney(alis_marj);
-    user.marjlar[`${code}_satis_marj`] = parseMoney(satis_marj);
-
-    user.markModified('marjlar');
-    await user.save();
-
-    res.json({ success: true, message: 'Marj başarıyla güncellendi', marjlar: user.marjlar });
-  } catch (e) {
-    res.status(500).json({ success: false, message: 'Marj güncellenirken hata oluştu', error: e.message });
-  }
-});
-
-router.get('/marjlar', authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
-    res.json({ success: true, data: user.marjlar || {} });
-  } catch (e) {
-    res.status(500).json({ success: false, message: 'Marjlar alınamadı', error: e.message });
   }
 });
 
