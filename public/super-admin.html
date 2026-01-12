@@ -12,17 +12,20 @@
       --gold: #fbbf24;
       --text: #e5e7eb;
       --text-dim: #9ca3af;
+      --danger: #ef4444;
+      --ok: #22c55e;
+      --info: #3b82f6;
     }
-    
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.6;
     }
-    
+
     .topbar {
       background: linear-gradient(135deg, #991b1b, #7f1d1d);
       border-bottom: 2px solid #dc2626;
@@ -32,7 +35,7 @@
       align-items: center;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
-    
+
     .topbar h1 {
       font-size: 22px;
       font-weight: 700;
@@ -41,13 +44,15 @@
       align-items: center;
       gap: 10px;
     }
-    
+
+    .topbar-right { display: flex; gap: 10px; }
+
     .container {
       max-width: 1200px;
       margin: 0 auto;
       padding: 30px 20px;
     }
-    
+
     .card {
       background: var(--panel);
       border-radius: 15px;
@@ -56,7 +61,7 @@
       border: 1px solid var(--border);
       margin-bottom: 30px;
     }
-    
+
     .card-title {
       font-size: 20px;
       font-weight: 600;
@@ -68,11 +73,24 @@
       align-items: center;
       gap: 10px;
     }
-    
-    .form-group {
-      margin-bottom: 20px;
+
+    .btn {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      color: white;
+      transition: transform 0.08s ease;
     }
-    
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary { background: var(--info); }
+    .btn-secondary { background: #64748b; }
+    .btn-info { background: #0ea5e9; }
+    .btn-danger { background: var(--danger); }
+    .btn-small { padding: 8px 16px; font-size: 14px; }
+
     label {
       display: block;
       margin-bottom: 8px;
@@ -80,7 +98,7 @@
       font-size: 14px;
       color: var(--text-dim);
     }
-    
+
     input, select {
       width: 100%;
       padding: 12px 15px;
@@ -91,112 +109,229 @@
       font-size: 15px;
       transition: all 0.2s;
     }
-    
+
     input:focus, select:focus {
       outline: none;
       border-color: var(--gold);
       box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
     }
-    
-    .btn {
-      padding: 12px 24px;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 15px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: white;
-    }
-    
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
-    }
-    
-    .btn-danger {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
-    }
-    
-    .btn-danger:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
-    }
-    
+
+    .form-group { margin-bottom: 20px; }
+
     .message {
-      padding: 15px 20px;
-      border-radius: 8px;
-      margin-top: 20px;
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border-left: 4px solid var(--info);
+      background: rgba(59, 130, 246, 0.1);
       display: none;
-      font-weight: 500;
     }
-    
     .message.show { display: block; }
-    
     .message.success {
-      background: rgba(34, 197, 94, 0.1);
-      border-left: 4px solid #22c55e;
-      color: #86efac;
+      border-left-color: var(--ok);
+      background: rgba(34, 197, 94, 0.12);
     }
-    
     .message.error {
-      background: rgba(239, 68, 68, 0.1);
-      border-left: 4px solid #ef4444;
-      color: #fca5a5;
+      border-left-color: var(--danger);
+      background: rgba(239, 68, 68, 0.12);
     }
-    
-    .user-list {
-      margin-top: 30px;
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
     }
-    
-    .user-item {
+
+    .stat-box {
       background: var(--bg);
-      padding: 15px 20px;
-      border-radius: 8px;
-      margin-bottom: 10px;
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .user-list { display: grid; gap: 12px; }
+    .user-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: var(--bg);
       border: 1px solid var(--border);
+      padding: 14px;
+      border-radius: 12px;
     }
-    
-    .user-info h4 {
-      color: var(--text);
-      font-size: 16px;
-      margin-bottom: 5px;
+    .user-info h4 { margin: 0; font-size: 16px; }
+    .user-info p { color: var(--text-dim); font-size: 14px; }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
     }
-    
-    .user-info p {
-      color: var(--text-dim);
+    .table th, .table td {
+      text-align: left;
+      padding: 12px 12px;
+      border-bottom: 1px solid var(--border);
       font-size: 14px;
     }
-    
-    .btn-small {
-      padding: 8px 16px;
-      font-size: 14px;
+    .table th { color: var(--text-dim); font-weight: 700; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      color: var(--gold);
+      margin-left: 8px;
+    }
+
+    .pill-ok {
+      color: var(--ok);
+      font-weight: 700;
+    }
+    .pill-bad {
+      color: var(--danger);
+      font-weight: 700;
     }
   </style>
 </head>
+
 <body>
   <div class="topbar">
     <h1>🔐 SUPER ADMIN - Kullanıcı Yönetimi</h1>
-    <button class="btn btn-danger" onclick="logout()">🚪 Çıkış</button>
+    <div class="topbar-right">
+      <button class="btn btn-info" onclick="location.href='/api-stats.html'">📊 API İstatistikleri</button>
+      <button class="btn btn-danger" onclick="logout()">🚪 Çıkış</button>
+    </div>
   </div>
 
   <div class="container">
+    <!-- API Yönetimi -->
     <div class="card">
-      <div class="card-title">
-        <span>➕</span>
-        Yeni Kullanıcı Ekle
+      <div class="card-title"><span>🔄</span>API Yönetimi</div>
+
+      <div style="padding: 1rem; background: rgba(245, 158, 11, 0.1); border-radius: 12px; margin-bottom: 1rem;">
+        <h4 style="color: var(--gold); margin-bottom: 0.5rem;">ℹ️ API Cache Sistemi</h4>
+        <p style="color: var(--text-dim); font-size: 0.875rem; line-height: 1.6;">
+          <strong>Sadece siz</strong> (Super Admin) API'den fiyat çekebilirsiniz.
+          Fiyatlar sunucuda kısa süreli cache'lenir (Vercel/serverless ortamda bellek cache'i kullanılır). <strong>MongoDB sadece</strong> kullanıcı / marj / mesaj gibi yönetim işlemleri için kullanılır.
+        </p>
       </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Son Güncelleme</div>
+          <div class="stat-value" id="lastCacheUpdate">--:--</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Cache Yaşı</div>
+          <div class="stat-value" id="cacheAge">-- sn</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Toplam İstek (Bu sayfada)</div>
+          <div class="stat-value" id="totalRequests">0</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Şu an Kaynak</div>
+          <div class="stat-value" id="currentSource">--</div>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="fetchFromAPI()">🔄 API'den Fiyat Çek</button>
+        <button class="btn btn-secondary" onclick="checkCacheStatus()">📊 Cache Durumu</button>
+        <button class="btn btn-info" onclick="refreshUsage()">💳 Ücretli API Takibini Yenile</button>
+        <button class="btn btn-warning" onclick="goMessages()">💬 Mesajlar</button>
+      </div>
+
+      <div class="message" id="apiMsg" style="margin-top: 1rem;"></div>
+    </div>
+
+    <!-- ✅ Ücretli API Takibi -->
+    <div class="card">
+      <div class="card-title"><span>💳</span>Ücretli API Takibi (Günlük / IP / Kullanıcı)</div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Bugün Ücretli Çağrı</div>
+          <div class="stat-value" id="paidToday">0</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Bugün Ücretsiz Çağrı</div>
+          <div class="stat-value" id="freeToday">0</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Son Ücretli Çağrı</div>
+          <div class="stat-value" id="lastPaidAt">--</div>
+          <div style="color: var(--text-dim); font-size: 12px; margin-top: 6px;" id="lastPaidMeta">--</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Son Kullanılan Kaynak</div>
+          <div class="stat-value" id="lastSourceBox">--</div>
+          <div style="color: var(--text-dim); font-size: 12px; margin-top: 6px;" id="lastSourceAt">--</div>
+        </div>
+      </div>
+
+      <div style="display:grid; gap: 16px; grid-template-columns: 1fr 1fr;">
+        <div>
+          <h4 style="margin-bottom: 10px; color: var(--text);">Top IP (Bugün - Ücretli)</h4>
+          <div id="topIps" style="color: var(--text-dim); font-size: 14px;">Yükleniyor...</div>
+        </div>
+
+        <div>
+          <h4 style="margin-bottom: 10px; color: var(--text);">Son 50 Ücretli Çağrı</h4>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Zaman</th>
+                <th>Kullanıcı</th>
+                <th>IP</th>
+                <th>Durum</th>
+                <th>ms</th>
+              </tr>
+            </thead>
+            <tbody id="paidLogTable">
+              <tr><td colspan="5" style="color: var(--text-dim);">Yükleniyor...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="message" id="usageMsg"></div>
+    </div>
+
+    <!-- Kullanıcı Ekle -->
+    <div class="card">
+      <div class="card-title"><span>➕</span>Yeni Kullanıcı Ekle</div>
 
       <div class="form-group">
         <label>Kullanıcı Adı (Email)</label>
@@ -222,16 +357,12 @@
       </div>
 
       <button class="btn btn-primary" onclick="addUser()">➕ Kullanıcı Ekle</button>
-
       <div class="message" id="msg"></div>
     </div>
 
+    <!-- Kullanıcı Listesi -->
     <div class="card">
-      <div class="card-title">
-        <span>👥</span>
-        Kayıtlı Kullanıcılar
-      </div>
-
+      <div class="card-title"><span>👥</span>Kayıtlı Kullanıcılar</div>
       <div class="user-list" id="userList">
         <p style="color: var(--text-dim);">Yükleniyor...</p>
       </div>
@@ -243,126 +374,231 @@
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const API_BASE = window.location.origin + '/api';
 
-    if (!token) {
-      window.location.href = '/login.html';
+    if (!token) window.location.href = '/login.html';
+
+    if (user.role !== 'superadmin') {
+      alert('⛔ Erişim Reddedildi!\n\nBu sayfaya sadece Super Admin erişebilir.');
+      window.location.href = '/admin.html';
     }
 
-    // Role kontrolü - Sadece superadmin erişebilir
-    if (user.role !== 'superadmin') {
-      alert('⛔ Erişim Reddedildi!\n\nBu sayfaya sadece Super Admin yetkisi olan kullanıcılar erişebilir.');
-      window.location.href = '/admin.html';
+    let requestCount = 0;
+
+    async function apiFetch(url, options = {}) {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = data?.message || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    // API'den fiyat çek
+    async function fetchFromAPI() {
+      const msgEl = document.getElementById('apiMsg');
+      msgEl.textContent = "⏳ API'den fiyat çekiliyor...";
+      msgEl.className = 'message show';
+
+      try {
+        const data = await apiFetch(`${API_BASE}/cache/fetch-from-api`, { method: 'POST' });
+
+        if (data.success) {
+          msgEl.textContent = `✅ ${data.message || "Fiyatlar çekildi!"}`;
+          msgEl.className = 'message success show';
+
+          requestCount++;
+          document.getElementById('totalRequests').textContent = requestCount;
+
+          await checkCacheStatus();
+          await refreshUsage();
+        } else {
+          msgEl.textContent = '❌ ' + (data.message || 'API hatası');
+          msgEl.className = 'message error show';
+        }
+      } catch (e) {
+        msgEl.textContent = '❌ ' + e.message;
+        msgEl.className = 'message error show';
+      }
+
+      setTimeout(() => msgEl.classList.remove('show'), 3500);
+    }
+
+    // Cache durumunu kontrol et
+    async function checkCacheStatus() {
+      try {
+        const data = await apiFetch(`${API_BASE}/cache/cached`);
+        const meta = data.metadata || {};
+
+        const fetchedAt = meta.fetchedAt ? new Date(meta.fetchedAt) : null;
+        document.getElementById('lastCacheUpdate').textContent = fetchedAt ? fetchedAt.toLocaleString('tr-TR') : '--';
+        document.getElementById('cacheAge').textContent = (meta.cacheAge ?? '--') + ' sn';
+
+        const src = meta.sourceName || meta.source || '--';
+        document.getElementById('currentSource').textContent = src;
+      } catch (e) {
+        // sessiz geç
+        console.warn('Cache status error:', e.message);
+      }
+    }
+
+    // ✅ Ücretli API kullanım özet + log + top ip
+    async function refreshUsage() {
+      const usageMsg = document.getElementById('usageMsg');
+      usageMsg.className = 'message show';
+      usageMsg.textContent = '⏳ Ücretli API takibi yükleniyor...';
+
+      try {
+        const summary = await apiFetch(`${API_BASE}/cache/admin/usage-summary`);
+        const s = summary.data || {};
+
+        document.getElementById('paidToday').textContent = s.paidToday ?? 0;
+        document.getElementById('freeToday').textContent = s.freeToday ?? 0;
+
+        document.getElementById('lastPaidAt').textContent =
+          s.lastPaidAt ? new Date(s.lastPaidAt).toLocaleString('tr-TR') : '--';
+        document.getElementById('lastPaidMeta').textContent =
+          s.lastPaidBy ? (`${s.lastPaidBy} | ${s.lastPaidIp || '-'}`) : '--';
+
+        document.getElementById('lastSourceBox').textContent = s.lastSource || '--';
+        document.getElementById('lastSourceAt').textContent =
+          s.lastSourceAt ? new Date(s.lastSourceAt).toLocaleString('tr-TR') : '--';
+
+        // top ips
+        const top = await apiFetch(`${API_BASE}/cache/admin/top-ips?source=paid_api`);
+        const topEl = document.getElementById('topIps');
+        const rows = top.data || [];
+        if (!rows.length) {
+          topEl.textContent = 'Bugün ücretli çağrı yok.';
+        } else {
+          topEl.innerHTML = rows.map(r => `• <b>${r.ip}</b> <span class="badge">${r.count}</span>`).join('<br/>');
+        }
+
+        // paid logs
+        const logs = await apiFetch(`${API_BASE}/cache/admin/usage-logs?source=paid_api&limit=50`);
+        const tbody = document.getElementById('paidLogTable');
+        const list = logs.data || [];
+
+        if (!list.length) {
+          tbody.innerHTML = `<tr><td colspan="5" style="color: var(--text-dim);">Henüz log yok.</td></tr>`;
+        } else {
+          tbody.innerHTML = list.map(x => {
+            const dt = x.createdAt ? new Date(x.createdAt).toLocaleString('tr-TR') : '-';
+            const who = (x.full_name || x.username || '-');
+            const ip = x.ip || '-';
+            const ok = x.success ? `<span class="pill-ok">OK</span>` : `<span class="pill-bad">FAIL</span>`;
+            const ms = x.latencyMs ?? 0;
+            return `
+              <tr>
+                <td>${dt}</td>
+                <td>${who}</td>
+                <td>${ip}</td>
+                <td>${ok}</td>
+                <td>${ms}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        usageMsg.textContent = '✅ Ücretli API takibi güncellendi.';
+        usageMsg.className = 'message success show';
+      } catch (e) {
+        usageMsg.textContent = '❌ ' + e.message;
+        usageMsg.className = 'message error show';
+      }
+
+      setTimeout(() => usageMsg.classList.remove('show'), 3500);
     }
 
     // Kullanıcı ekle
     async function addUser() {
-      const username = document.getElementById('username').value.trim();
-      const fullName = document.getElementById('fullName').value.trim();
-      const password = document.getElementById('password').value;
-      const role = document.getElementById('role').value;
       const msgEl = document.getElementById('msg');
-
-      if (!username || !fullName || !password) {
-        msgEl.textContent = '❌ Tüm alanları doldurun!';
-        msgEl.className = 'message error show';
-        setTimeout(() => msgEl.classList.remove('show'), 3000);
-        return;
-      }
-
-      if (password.length < 6) {
-        msgEl.textContent = '❌ Şifre en az 6 karakter olmalı!';
-        msgEl.className = 'message error show';
-        setTimeout(() => msgEl.classList.remove('show'), 3000);
-        return;
-      }
+      msgEl.className = 'message show';
+      msgEl.textContent = '⏳ Kullanıcı ekleniyor...';
 
       try {
+        const payload = {
+          username: document.getElementById('username').value,
+          full_name: document.getElementById('fullName').value,
+          password: document.getElementById('password').value,
+          role: document.getElementById('role').value
+        };
+
         const response = await fetch(`${API_BASE}/auth/register`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            username: username.toLowerCase(),
-            full_name: fullName,
-            password: password,
-            role: role
-          })
+          body: JSON.stringify(payload)
         });
-
         const data = await response.json();
 
         if (data.success) {
           msgEl.textContent = '✅ Kullanıcı başarıyla eklendi!';
           msgEl.className = 'message success show';
-          
-          // Formu temizle
+
           document.getElementById('username').value = '';
           document.getElementById('fullName').value = '';
           document.getElementById('password').value = '';
-          
-          // Listeyi yenile
+
           loadUsers();
         } else {
           msgEl.textContent = '❌ ' + (data.message || 'Hata oluştu');
           msgEl.className = 'message error show';
         }
-
-        setTimeout(() => msgEl.classList.remove('show'), 3000);
-      } catch (error) {
-        msgEl.textContent = '❌ Bağlantı hatası: ' + error.message;
+      } catch (e) {
+        msgEl.textContent = '❌ ' + e.message;
         msgEl.className = 'message error show';
-        setTimeout(() => msgEl.classList.remove('show'), 3000);
       }
+
+      setTimeout(() => msgEl.classList.remove('show'), 3500);
     }
 
-    // Kullanıcıları listele
     async function loadUsers() {
       try {
-        const response = await fetch(`${API_BASE}/auth/users`, {
+        const res = await fetch(`${API_BASE}/auth/users`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        const data = await res.json();
 
-        const data = await response.json();
-
+        const userListEl = document.getElementById('userList');
         if (data.success && data.users) {
-          const userListEl = document.getElementById('userList');
-          
-          if (data.users.length === 0) {
+          if (!data.users.length) {
             userListEl.innerHTML = '<p style="color: var(--text-dim);">Henüz kullanıcı yok.</p>';
             return;
           }
-
-          userListEl.innerHTML = data.users.map(user => `
+          userListEl.innerHTML = data.users.map(u => `
             <div class="user-item">
               <div class="user-info">
-                <h4>🏪 ${user.full_name} ${user.role === 'superadmin' ? '🔐' : '👤'}</h4>
-                <p>📧 ${user.username} | Rol: ${user.role === 'superadmin' ? 'Super Admin' : 'Admin'}</p>
+                <h4>🪙 ${u.full_name} ${u.role === 'superadmin' ? '🔐' : '👤'}</h4>
+                <p>📧 ${u.username} | Rol: ${u.role === 'superadmin' ? 'Super Admin' : 'Admin'}</p>
               </div>
-              <button class="btn btn-danger btn-small" onclick="deleteUser('${user._id}', '${user.full_name}')">
-                🗑️ Sil
-              </button>
+              <button class="btn btn-danger btn-small" onclick="deleteUser('${u._id}', '${u.full_name}')">🗑️ Sil</button>
             </div>
           `).join('');
+        } else {
+          userListEl.innerHTML = '<p style="color: var(--text-dim);">Kullanıcılar alınamadı.</p>';
         }
-      } catch (error) {
-        console.error('Kullanıcı listeleme hatası:', error);
+      } catch (e) {
+        console.error('Kullanıcı listeleme hatası:', e.message);
       }
     }
 
-    // Kullanıcı sil
     async function deleteUser(userId, fullName) {
-      if (!confirm(`"${fullName}" kullanıcısını silmek istediğinize emin misiniz?`)) {
-        return;
-      }
+      if (!confirm(`"${fullName}" kullanıcısını silmek istediğinize emin misiniz?`)) return;
 
       try {
-        const response = await fetch(`${API_BASE}/auth/users/${userId}`, {
+        const res = await fetch(`${API_BASE}/auth/users/${userId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-
-        const data = await response.json();
+        const data = await res.json();
 
         if (data.success) {
           alert('✅ Kullanıcı silindi!');
@@ -370,8 +606,8 @@
         } else {
           alert('❌ Hata: ' + (data.message || 'Kullanıcı silinemedi'));
         }
-      } catch (error) {
-        alert('❌ Bağlantı hatası: ' + error.message);
+      } catch (e) {
+        alert('❌ ' + e.message);
       }
     }
 
@@ -383,8 +619,20 @@
       }
     }
 
-    // Sayfa yüklendiğinde kullanıcıları listele
+    // İlk yükleme
+    checkCacheStatus();
+    refreshUsage();
     loadUsers();
-  </script>
+
+    // Otomatik güncelle
+    setInterval(checkCacheStatus, 30000);
+    setInterval(refreshUsage, 60000);
+  
+
+function goMessages(){
+  window.location.href = "/messages.html";
+}
+
+</script>
 </body>
 </html>

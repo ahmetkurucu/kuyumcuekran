@@ -3,352 +3,668 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel - Marj Ayarları</title>
+  <title>Admin Dashboard - Kuyumcu Yönetim</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
     :root {
-      --bg: #0f1419;
-      --panel: #1a1f29;
-      --border: #2d3748;
-      --gold: #fbbf24;
-      --text: #e5e7eb;
-      --text-dim: #9ca3af;
+      --primary: #f59e0b;
+      --primary-dark: #d97706;
+      --secondary: #3b82f6;
+      --success: #10b981;
+      --danger: #ef4444;
+      --dark: #1e293b;
+      --darker: #0f172a;
+      --sidebar-bg: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --card-bg: #1e293b;
+      --input-bg: #0f172a;
     }
     
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--darker);
       color: var(--text);
       line-height: 1.6;
+      overflow-x: hidden;
     }
     
-    .topbar {
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      border-bottom: 2px solid var(--gold);
-      padding: 20px 30px;
+    /* Layout */
+    .app-layout {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      min-height: 100vh;
     }
     
-    .topbar-brand { display: flex; align-items: center; gap: 15px; }
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      left: 0;
+      top: 0;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+    
+    .sidebar-header {
+      padding: 2rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
     
     .logo {
-      width: 45px;
-      height: 45px;
-      background: linear-gradient(135deg, var(--gold), #f59e0b);
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 24px;
-      box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
     }
     
-    .topbar-brand h1 {
-      font-size: 22px;
+    .brand-text h1 {
+      font-size: 1.25rem;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--gold), #f59e0b);
+      background: linear-gradient(135deg, var(--primary), #fbbf24);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
     
-    .topbar-user {
-      display: flex;
-      align-items: center;
-      gap: 15px;
+    .brand-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
     }
     
-    .user-info { text-align: right; }
-    .user-info .name { font-weight: 600; font-size: 14px; color: var(--text); }
-    .user-info .role { font-size: 12px; color: var(--text-dim); }
+    /* Navigation */
+    .sidebar-nav {
+      flex: 1;
+      padding: 1.5rem 1rem;
+      overflow-y: auto;
+    }
+    
+    .nav-section {
+      margin-bottom: 2rem;
+    }
+    
+    .nav-section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      padding: 0 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    
+    .nav-item:hover {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: var(--primary);
+      transform: translateX(4px);
+    }
+    
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #000;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    }
+    
+    .nav-item-icon {
+      font-size: 1.25rem;
+      width: 24px;
+      text-align: center;
+    }
+    
+    .nav-item-badge {
+      margin-left: auto;
+      background: var(--primary);
+      color: #000;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    
+    /* User Profile in Sidebar */
+    .sidebar-footer {
+      padding: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+    
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: var(--input-bg);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
     
     .user-avatar {
-      width: 45px;
-      height: 45px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-size: 18px;
       font-weight: 700;
+      font-size: 1rem;
+      flex-shrink: 0;
     }
     
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 30px 20px;
+    .user-info {
+      flex: 1;
+      min-width: 0;
     }
     
-    .page-header {
-      background: linear-gradient(135deg, var(--panel), #141923);
-      border-radius: 15px;
-      padding: 30px;
-      margin-bottom: 30px;
-      border-left: 4px solid var(--gold);
-    }
-    
-    .page-header h2 {
-      font-size: 28px;
-      margin-bottom: 10px;
-      color: var(--gold);
-    }
-    
-    .page-header p {
-      color: var(--text-dim);
-      font-size: 14px;
-    }
-    
-    .info-box {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.05));
-      border-left: 4px solid #3b82f6;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 30px;
-      font-size: 14px;
-      line-height: 1.8;
-    }
-    
-    .info-box strong {
-      color: var(--text);
+    .user-info h3 {
+      font-size: 0.875rem;
       font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     
+    .user-info p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      margin-left: 280px;
+      background: var(--darker);
+      min-height: 100vh;
+    }
+    
+    .content-header {
+      background: rgba(30, 41, 59, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 1.5rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    
+    .page-subtitle {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+    
+    .content-body {
+      padding: 2rem;
+    }
+    
+    /* Card */
     .card {
-      background: var(--panel);
-      border-radius: 15px;
-      padding: 30px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      background: var(--card-bg);
       border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
     }
     
     .card-title {
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--gold);
-      margin-bottom: 25px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
     }
     
-    .marj-list {
-      display: grid;
-      gap: 15px;
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
     }
     
-    .marj-item {
-      background: var(--bg);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      display: grid;
-      grid-template-columns: 250px 1fr 1fr auto;
-      gap: 20px;
-      align-items: center;
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+      position: relative;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 3rem;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 0.875rem;
       transition: all 0.2s;
     }
     
-    .marj-item:hover {
-      border-color: var(--gold);
-      transform: translateX(5px);
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+    
+    .search-box::before {
+      content: '🔍';
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+    }
+    
+    /* Table */
+    .marj-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 0.5rem;
+    }
+    
+    .marj-table thead th {
+      text-align: left;
+      padding: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    
+    .marj-row {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    
+    .marj-row:hover {
+      background: rgba(245, 158, 11, 0.05);
+      border-color: var(--primary);
+      transform: translateX(4px);
+    }
+    
+    .marj-row td {
+      padding: 1.25rem 1rem;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .marj-row td:first-child {
+      border-left: 1px solid var(--border);
+      border-radius: 10px 0 0 10px;
+    }
+    
+    .marj-row td:last-child {
+      border-right: 1px solid var(--border);
+      border-radius: 0 10px 10px 0;
+    }
+    
+    .product-cell {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .product-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
     }
     
     .product-name {
       font-weight: 600;
-      font-size: 16px;
+      font-size: 0.9375rem;
       color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 10px;
     }
     
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    
-    .input-group label {
-      font-size: 12px;
-      color: var(--text-dim);
+    .input-wrapper label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
       font-weight: 500;
     }
     
-    .input-group input {
-      padding: 10px 12px;
-      background: var(--panel);
-      border: 2px solid var(--border);
+    .marj-input {
+      width: 140px;
+      padding: 0.625rem 0.875rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
       border-radius: 8px;
       color: var(--text);
-      font-size: 15px;
+      font-size: 0.9375rem;
       font-weight: 600;
+      transition: all 0.2s;
     }
     
-    .input-group input:focus {
+    .marj-input:focus {
       outline: none;
-      border-color: var(--gold);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
     }
     
+    /* Buttons */
     .btn {
-      padding: 10px 20px;
+      padding: 0.625rem 1.25rem;
       border: none;
       border-radius: 8px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 0.875rem;
       cursor: pointer;
       transition: all 0.2s;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 0.5rem;
       white-space: nowrap;
     }
     
-    .btn-save {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: white;
-    }
-    
-    .btn-save:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
-    }
-    
     .btn-primary {
-      background: linear-gradient(135deg, var(--gold), #f59e0b);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: #000;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
     }
     
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
     }
     
-    .btn-secondary {
-      background: linear-gradient(135deg, #667eea, #764ba2);
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #059669);
       color: white;
     }
     
-    .btn-secondary:hover {
+    .btn-success:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
     }
     
-    .btn-danger {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
     }
     
-    .btn-danger:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--primary);
     }
     
-    .btn-group {
+    .action-buttons {
       display: flex;
-      gap: 10px;
+      gap: 1rem;
       flex-wrap: wrap;
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 2px solid var(--border);
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
     }
     
-    .message {
-      padding: 15px 20px;
-      border-radius: 8px;
-      margin-top: 20px;
-      display: none;
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      padding: 1rem 1.5rem;
+      border-radius: 10px;
       font-weight: 500;
-      animation: slideIn 0.3s;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      display: none;
+      animation: slideIn 0.3s ease;
     }
     
     @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
     
-    .message.show { display: block; }
-    
-    .message.success {
-      background: rgba(34, 197, 94, 0.1);
-      border-left: 4px solid #22c55e;
-      color: #86efac;
+    .toast.show { display: block; }
+    .toast.success {
+      background: linear-gradient(135deg, var(--success), #059669);
+      color: white;
+    }
+    .toast.error {
+      background: linear-gradient(135deg, var(--danger), #dc2626);
+      color: white;
     }
     
-    .message.error {
-      background: rgba(239, 68, 68, 0.1);
-      border-left: 4px solid #ef4444;
-      color: #fca5a5;
-    }
-    
+    /* Loading */
     .loading {
       text-align: center;
-      padding: 40px;
-      color: var(--text-dim);
+      padding: 3rem;
+      color: var(--text-muted);
     }
     
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Mobile Menu Toggle */
+    .mobile-menu-btn {
+      display: none;
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border: none;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
+      z-index: 101;
+    }
+    
+    /* Responsive */
     @media (max-width: 1024px) {
-      .marj-item {
-        grid-template-columns: 1fr;
-        gap: 15px;
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      
+      .sidebar.active {
+        transform: translateX(0);
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .content-body {
+        padding: 1rem;
+      }
+      
+      .card {
+        padding: 1.5rem;
       }
     }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="topbar-brand">
-      <div class="logo">💎</div>
-      <h1>KUYUMCU YÖNETİM</h1>
-    </div>
-    <div class="topbar-user">
-      <div class="user-info">
-        <div class="name" id="userName">Kullanıcı</div>
-        <div class="role">Yönetici</div>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <div class="logo">💎</div>
+          <div class="brand-text">
+            <h1>Kuyumcu</h1>
+            <p>Yönetim Paneli</p>
+          </div>
+        </div>
       </div>
-      <div class="user-avatar" id="userAvatar">A</div>
-    </div>
+      
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Ana Menü</div>
+          <a class="nav-item active" onclick="showSection('marj')">
+            <span class="nav-item-icon">📊</span>
+            <span>Marj Yönetimi</span>
+          </a>
+          <a class="nav-item" onclick="openVitrin()">
+            <span class="nav-item-icon">📺</span>
+            <span>Vitrin Ekranı</span>
+          </a>
+        </div>
+        
+        <div class="nav-section" id="superAdminMenu" style="display: none;">
+          <div class="nav-section-title">Yönetim</div>
+          <a class="nav-item" onclick="openSuperAdmin()">
+            <span class="nav-item-icon">🔐</span>
+            <span>Super Admin</span>
+          </a>
+        </div>
+        
+        <div class="nav-section">
+          <div class="nav-section-title">Sistem</div>
+          <a class="nav-item" onclick="logout()">
+            <span class="nav-item-icon">🚪</span>
+            <span>Çıkış Yap</span>
+          </a>
+        </div>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div class="user-info">
+            <h3 id="userName">Kullanıcı</h3>
+            <p id="userRole">Admin</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="content-header">
+        <h1 class="page-title">Marj Yönetimi</h1>
+        <p class="page-subtitle">Ürün marjlarını düzenleyin ve yönetin</p>
+      </div>
+      
+      <div class="content-body">
+        <!-- Marj Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Tüm Ürün Marjları</div>
+          </div>
+
+          <div class="toolbar">
+            <div class="search-box">
+              <input type="text" id="searchInput" placeholder="Ürün ara...">
+            </div>
+            <button class="btn btn-ghost" onclick="resetAllMargins()">
+              🔄 Sıfırla
+            </button>
+          </div>
+
+          <div id="marjTableContainer">
+            <div class="loading">
+              <div class="spinner"></div>
+              <p>Marjlar yükleniyor...</p>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn-primary" onclick="saveAllMarj()">
+              💾 Tümünü Kaydet
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
-  <div class="container">
-    <div class="page-header">
-      <h2>👨‍💼 Admin Panel</h2>
-      <p>Marj ayarları ve sistem yönetimi</p>
-    </div>
+  <!-- Mobile Menu Button -->
+  <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
 
-    <div class="info-box">
-      <strong>ℹ️ Marj Sistemi:</strong> 
-      Fiyatlar canlı olarak haremaltin.com API'den çekilir. 
-      <strong>ALIŞ MARJI</strong> API fiyatından çıkarılır (daha ucuz alış), 
-      <strong>SATIŞ MARJI</strong> API fiyatına eklenir (daha pahalı satış).
-    </div>
-
-    <div class="card">
-      <div class="card-title">
-        <span>📊</span>
-        Tüm Ürün Marjları
-      </div>
-
-      <div class="marj-list" id="marjList">
-        <div class="loading">Marjlar yükleniyor...</div>
-      </div>
-
-      <div class="btn-group">
-        <button class="btn btn-primary" onclick="saveAllMarj()">💾 Tümünü Kaydet</button>
-        <button class="btn btn-secondary" onclick="openVitrin()">📺 Vitrini Aç</button>
-        <button class="btn" style="background: linear-gradient(135deg, #dc2626, #991b1b); color: white;" onclick="openSuperAdmin()" id="btnSuperAdmin">🔐 Super Admin</button>
-        <button class="btn btn-danger" onclick="logout()">🚪 Çıkış Yap</button>
-      </div>
-
-      <div class="message" id="msg"></div>
-    </div>
-  </div>
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
 
   <script>
     const token = localStorage.getItem('token');
@@ -361,29 +677,30 @@
 
     // User bilgilerini göster
     document.getElementById('userName').textContent = user.full_name || user.username;
+    document.getElementById('userRole').textContent = user.role === 'superadmin' ? 'Super Admin' : 'Admin';
     document.getElementById('userAvatar').textContent = (user.full_name || user.username || 'U').charAt(0).toUpperCase();
 
-    // Super Admin butonunu sadece superadmin rolüne göster
-    const isSuperAdmin = user.role === 'superadmin';
-    if (!isSuperAdmin) {
-      document.getElementById('btnSuperAdmin').style.display = 'none';
+    // Super Admin menüsünü göster
+    if (user.role === 'superadmin') {
+      document.getElementById('superAdminMenu').style.display = 'block';
     }
 
     const PRODUCTS = [
-      { code: 'KULCEALTIN', name: '💰 Gram Altın', icon: '💰' },
-      { code: 'AYAR22', name: '⭐ 22 Ayar Altın', icon: '⭐' },
-      { code: 'CEYREK_YENI', name: '🪙 Çeyrek (Yeni)', icon: '🪙' },
-      { code: 'CEYREK_ESKI', name: '🪙 Çeyrek (Eski)', icon: '🪙' },
-      { code: 'YARIM_YENI', name: '🥇 Yarım (Yeni)', icon: '🥇' },
-      { code: 'YARIM_ESKI', name: '🥇 Yarım (Eski)', icon: '🥇' },
-      { code: 'TEK_YENI', name: '🏆 Tam (Yeni)', icon: '🏆' },
-      { code: 'TEK_ESKI', name: '🏆 Tam (Eski)', icon: '🏆' },
-      { code: 'ATA_YENI', name: '👑 Ata', icon: '👑' },
-      { code: 'USDTRY', name: '💵 Dolar', icon: '💵' },
-      { code: 'EURTRY', name: '💶 Euro', icon: '💶' }
+      { code: 'KULCEALTIN', name: 'Gram Altın', icon: '💰' },
+      { code: 'AYAR22', name: '22 Ayar Altın', icon: '⭐' },
+      { code: 'CEYREK_YENI', name: 'Çeyrek (Yeni)', icon: '🪙' },
+      { code: 'CEYREK_ESKI', name: 'Çeyrek (Eski)', icon: '🪙' },
+      { code: 'YARIM_YENI', name: 'Yarım (Yeni)', icon: '🥇' },
+      { code: 'YARIM_ESKI', name: 'Yarım (Eski)', icon: '🥇' },
+      { code: 'TEK_YENI', name: 'Tam (Yeni)', icon: '🏆' },
+      { code: 'TEK_ESKI', name: 'Tam (Eski)', icon: '🏆' },
+      { code: 'ATA_YENI', name: 'Ata', icon: '👑' },
+      { code: 'USDTRY', name: 'Dolar', icon: '💵' },
+      { code: 'EURTRY', name: 'Euro', icon: '💶' }
     ];
 
-    // Marjları yükle
+    let allMarjData = {};
+
     async function loadMarjlar() {
       try {
         const response = await fetch(`${API_BASE}/fiyat/marjlar`, {
@@ -393,72 +710,90 @@
         const data = await response.json();
 
         if (data.success) {
-          renderMarjList(data.data || {});
+          allMarjData = data.data || {};
+          renderMarjTable(PRODUCTS);
+          updateStats();
         } else {
           throw new Error(data.message || 'Marjlar yüklenemedi');
         }
       } catch (error) {
         console.error('Marj yükleme hatası:', error);
-        document.getElementById('marjList').innerHTML = `
-          <div style="color: #fca5a5; text-align: center; padding: 40px;">
-            ⚠️ Marjlar yüklenemedi: ${error.message}
-          </div>
-        `;
+        showToast('Marjlar yüklenemedi: ' + error.message, 'error');
       }
     }
 
-    // Marj listesini render et
-    function renderMarjList(marjlar) {
-      const html = PRODUCTS.map(product => {
-        const alisMarj = marjlar[`${product.code}_alis_marj`] || 0;
-        const satisMarj = marjlar[`${product.code}_satis_marj`] || 0;
+    function renderMarjTable(products) {
+      const html = `
+        <table class="marj-table">
+          <thead>
+            <tr>
+              <th style="width: 30%">Ürün</th>
+              <th style="width: 25%">Alış Marjı</th>
+              <th style="width: 25%">Satış Marjı</th>
+              <th style="width: 20%">İşlem</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${products.map(product => {
+              const alisMarj = allMarjData[`${product.code}_alis_marj`] || 0;
+              const satisMarj = allMarjData[`${product.code}_satis_marj`] || 0;
 
-        return `
-          <div class="marj-item">
-            <div class="product-name">
-              <span>${product.icon}</span>
-              <span>${product.name}</span>
-            </div>
-            
-            <div class="input-group">
-              <label>Alış Marjı (₺)</label>
-              <input 
-                type="number" 
-                step="0.01" 
-                value="${alisMarj}"
-                data-code="${product.code}"
-                data-type="alis"
-                placeholder="0.00"
-              />
-            </div>
-            
-            <div class="input-group">
-              <label>Satış Marjı (₺)</label>
-              <input 
-                type="number" 
-                step="0.01" 
-                value="${satisMarj}"
-                data-code="${product.code}"
-                data-type="satis"
-                placeholder="0.00"
-              />
-            </div>
-            
-            <button class="btn btn-save" onclick="saveMarj('${product.code}')">
-              💾 Kaydet
-            </button>
-          </div>
-        `;
-      }).join('');
+              return `
+                <tr class="marj-row">
+                  <td>
+                    <div class="product-cell">
+                      <div class="product-icon">${product.icon}</div>
+                      <div class="product-name">${product.name}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="input-wrapper">
+                      <label>Alış (₺)</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value="${alisMarj}"
+                        class="marj-input"
+                        data-code="${product.code}"
+                        data-type="alis"
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <div class="input-wrapper">
+                      <label>Satış (₺)</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value="${satisMarj}"
+                        class="marj-input"
+                        data-code="${product.code}"
+                        data-type="satis"
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <button class="btn btn-success" onclick="saveMarj('${product.code}')">
+                      💾 Kaydet
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
 
-      document.getElementById('marjList').innerHTML = html;
+      document.getElementById('marjTableContainer').innerHTML = html;
     }
 
-    // Tek marj kaydet
+    function updateStats() {
+      // Stats kaldırıldı - boş fonksiyon
+    }
+
     async function saveMarj(code) {
       const alisInput = document.querySelector(`input[data-code="${code}"][data-type="alis"]`);
       const satisInput = document.querySelector(`input[data-code="${code}"][data-type="satis"]`);
-      const msgEl = document.getElementById('msg');
 
       const alisMarj = parseFloat(alisInput.value) || 0;
       const satisMarj = parseFloat(satisInput.value) || 0;
@@ -470,49 +805,31 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({
-            code: code,
-            alis_marj: alisMarj,
-            satis_marj: satisMarj
-          })
+          body: JSON.stringify({ code, alis_marj: alisMarj, satis_marj: satisMarj })
         });
 
         const data = await response.json();
 
         if (data.success) {
-          msgEl.textContent = `✅ ${code} marjı kaydedildi!`;
-          msgEl.className = 'message success show';
+          showToast(`${code} marjı kaydedildi!`, 'success');
+          updateStats();
         } else {
-          msgEl.textContent = '❌ ' + (data.message || 'Bir hata oluştu');
-          msgEl.className = 'message error show';
+          showToast(data.message || 'Hata oluştu', 'error');
         }
-
-        setTimeout(() => msgEl.classList.remove('show'), 3000);
       } catch (error) {
-        msgEl.textContent = '❌ Bağlantı hatası: ' + error.message;
-        msgEl.className = 'message error show';
-        setTimeout(() => msgEl.classList.remove('show'), 3000);
+        showToast('Bağlantı hatası: ' + error.message, 'error');
       }
     }
 
-    // Tüm marjları kaydet
     async function saveAllMarj() {
-      const msgEl = document.getElementById('msg');
-      msgEl.textContent = '⏳ Tüm marjlar kaydediliyor...';
-      msgEl.className = 'message show';
-      msgEl.style.background = 'rgba(59, 130, 246, 0.1)';
-      msgEl.style.borderLeftColor = '#3b82f6';
-      msgEl.style.color = '#93c5fd';
-
+      showToast('Tüm marjlar kaydediliyor...', 'success');
+      
       let successCount = 0;
       let errorCount = 0;
 
       for (const product of PRODUCTS) {
         const alisInput = document.querySelector(`input[data-code="${product.code}"][data-type="alis"]`);
         const satisInput = document.querySelector(`input[data-code="${product.code}"][data-type="satis"]`);
-
-        const alisMarj = parseFloat(alisInput.value) || 0;
-        const satisMarj = parseFloat(satisInput.value) || 0;
 
         try {
           const response = await fetch(`${API_BASE}/fiyat/update-marj`, {
@@ -523,47 +840,57 @@
             },
             body: JSON.stringify({
               code: product.code,
-              alis_marj: alisMarj,
-              satis_marj: satisMarj
+              alis_marj: parseFloat(alisInput.value) || 0,
+              satis_marj: parseFloat(satisInput.value) || 0
             })
           });
 
           const data = await response.json();
-          if (data.success) {
-            successCount++;
-          } else {
-            errorCount++;
-          }
+          if (data.success) successCount++;
+          else errorCount++;
         } catch (error) {
           errorCount++;
         }
 
-        // Kısa bekleme (rate limit için)
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       if (errorCount === 0) {
-        msgEl.textContent = `✅ Tüm marjlar başarıyla kaydedildi! (${successCount} ürün)`;
-        msgEl.className = 'message success show';
+        showToast(`✅ Tüm marjlar kaydedildi! (${successCount} ürün)`, 'success');
       } else {
-        msgEl.textContent = `⚠️ ${successCount} ürün kaydedildi, ${errorCount} hata oluştu.`;
-        msgEl.className = 'message error show';
+        showToast(`⚠️ ${successCount} ürün kaydedildi, ${errorCount} hata`, 'error');
       }
-
-      setTimeout(() => msgEl.classList.remove('show'), 5000);
+      
+      updateStats();
     }
 
-    // Vitrini aç
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = PRODUCTS.filter(p => p.name.toLowerCase().includes(query));
+      renderMarjTable(filtered);
+    });
+
+    function resetAllMargins() {
+      if (!confirm('Tüm marjları sıfırlamak istediğinize emin misiniz?')) return;
+      document.querySelectorAll('.marj-input').forEach(input => input.value = 0);
+      showToast('Marjlar sıfırlandı (kaydetmeyi unutmayın)', 'success');
+    }
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
     function openVitrin() {
       window.open('/vitrin.html', '_blank');
     }
 
-    // Super Admin aç
     function openSuperAdmin() {
       window.location.href = '/super-admin.html';
     }
 
-    // Çıkış
     function logout() {
       if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
         localStorage.removeItem('token');
@@ -572,7 +899,10 @@
       }
     }
 
-    // Sayfa yüklendiğinde marjları yükle
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('active');
+    }
+
     loadMarjlar();
   </script>
 </body>

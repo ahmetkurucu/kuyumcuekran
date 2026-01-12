@@ -35,9 +35,10 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // ✅ ÖNEMLİ: id string olmalı (Mongoose ObjectId -> string)
     const token = jwt.sign(
       {
-        id: user._id,
+        id: user._id.toString(),
         username: user.username,
         full_name: user.full_name,
         role: user.role || 'admin'
@@ -46,12 +47,12 @@ router.post('/login', async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '12h' }
     );
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Giriş başarılı',
       token,
       user: {
-        id: user._id,
+        id: user._id.toString(),
         username: user.username,
         full_name: user.full_name,
         role: user.role || 'admin'
@@ -60,9 +61,10 @@ router.post('/login', async (req, res) => {
 
   } catch (error) {
     console.error('Login hatası:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Giriş sırasında bir hata oluştu'
+      message: 'Giriş sırasında bir hata oluştu',
+      error: error.message
     });
   }
 });
@@ -107,16 +109,17 @@ router.post('/change-password', authenticateToken, async (req, res) => {
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Şifre başarıyla değiştirildi'
     });
 
   } catch (error) {
     console.error('Şifre değiştirme hatası:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Şifre değiştirme sırasında bir hata oluştu'
+      message: 'Şifre değiştirme sırasında bir hata oluştu',
+      error: error.message
     });
   }
 });
@@ -161,26 +164,28 @@ router.post('/register', authenticateToken, async (req, res) => {
       username: username.toLowerCase().trim(),
       password: hashedPassword,
       full_name: full_name.trim(),
-      role: role || 'admin' // Varsayılan: admin
+      role: role || 'admin'
     });
 
     await newUser.save();
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Kullanıcı başarıyla oluşturuldu',
       user: {
-        id: newUser._id,
+        id: newUser._id.toString(),
         username: newUser.username,
-        full_name: newUser.full_name
+        full_name: newUser.full_name,
+        role: newUser.role
       }
     });
 
   } catch (error) {
     console.error('Kullanıcı oluşturma hatası:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Kullanıcı oluşturulurken hata oluştu'
+      message: 'Kullanıcı oluşturulurken hata oluştu',
+      error: error.message
     });
   }
 });
@@ -188,7 +193,6 @@ router.post('/register', authenticateToken, async (req, res) => {
 // Kullanıcı listesi (SADECE SUPERADMIN)
 router.get('/users', authenticateToken, async (req, res) => {
   try {
-    // Superadmin kontrolü
     if (req.user.role !== 'superadmin') {
       return res.status(403).json({
         success: false,
@@ -197,15 +201,17 @@ router.get('/users', authenticateToken, async (req, res) => {
     }
 
     const users = await User.find({}, 'username full_name role createdAt').sort({ createdAt: -1 });
-    res.json({
+    return res.json({
       success: true,
-      users: users
+      users
     });
+
   } catch (error) {
     console.error('Kullanıcı listesi hatası:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Kullanıcılar alınamadı'
+      message: 'Kullanıcılar alınamadı',
+      error: error.message
     });
   }
 });
@@ -213,7 +219,6 @@ router.get('/users', authenticateToken, async (req, res) => {
 // Kullanıcı sil (SADECE SUPERADMIN)
 router.delete('/users/:id', authenticateToken, async (req, res) => {
   try {
-    // Superadmin kontrolü
     if (req.user.role !== 'superadmin') {
       return res.status(403).json({
         success: false,
@@ -223,7 +228,7 @@ router.delete('/users/:id', authenticateToken, async (req, res) => {
 
     const userId = req.params.id;
     const user = await User.findByIdAndDelete(userId);
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -231,15 +236,17 @@ router.delete('/users/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Kullanıcı silindi'
     });
+
   } catch (error) {
     console.error('Kullanıcı silme hatası:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Kullanıcı silinemedi'
+      message: 'Kullanıcı silinemedi',
+      error: error.message
     });
   }
 });
