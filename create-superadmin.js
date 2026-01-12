@@ -20,8 +20,8 @@ async function createSuperAdmin() {
     }
 
     // Yeni superadmin oluştur
-    const username = 'superadmin';
-    const password = 'Super123';
+    const username = 'ahmetkurucu';
+    const password = '252525';
     const fullName = 'Super Admin';
 
     const hashedPassword = await bcrypt.hash(password, 10);
