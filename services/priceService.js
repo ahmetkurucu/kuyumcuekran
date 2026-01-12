@@ -29,10 +29,10 @@ function parseRapidAPIData(dataArray) {
     'ESKİ TAM': 'TEK_ESKI',
     'YENİ ATA': 'ATA_YENI',
     'ESKİ ATA': 'ATA_ESKI',
-    'Has Altın': 'ALTIN',
+    'Has Altın': 'ALTIN',  // ← Has Altın
     '22 AYAR': 'AYAR22',
-    'GÜMÜŞ': 'GUMUS',
-    'ONS': 'ALTIN'
+    'GÜMÜŞ': 'GUMUS'
+    // ONS kaldırıldı - Has Altın kullanılacak
   };
 
   dataArray.forEach(item => {
