@@ -17,9 +17,8 @@ const API_CONFIG = {
 
 /**
  * Mesai saatlerine göre dinamik cache süresi hesaplar
- * - Hafta içi 09:30-20:00: 20 saniye
- * - Cumartesi 09:30-14:00: 20 saniye
- * - Cumartesi 14:00-20:00: 10 dakika
+ * - Hafta içi 09:30-20:00: 30 saniye
+ * - Cumartesi 09:30-14:00: 30 saniye
  * - Diğer saatler: 2 saat (7200000 ms)
  */
 function getDynamicCacheInterval() {
@@ -34,27 +33,24 @@ function getDynamicCacheInterval() {
     return 7200000; // 2 saat
   }
 
-  // Cumartesi: 09:30-14:00 arası 20 saniye, 14:00-20:00 arası 10 dakika, diğer saatler 2 saat
+  // Cumartesi: 09:30-14:00 arası 30 saniye, diğer saatler 2 saat
   if (day === 6) {
-    const morningStart = 9 * 60 + 30;  // 09:30 = 570 dakika
-    const morningEnd = 14 * 60;         // 14:00 = 840 dakika
-    const afternoonEnd = 20 * 60;       // 20:00 = 1200 dakika
+    const start = 9 * 60 + 30;  // 09:30 = 570 dakika
+    const end = 14 * 60;         // 14:00 = 840 dakika
     
-    if (totalMinutes >= morningStart && totalMinutes < morningEnd) {
-      return 20000; // 20 saniye (sabah mesaisi)
-    } else if (totalMinutes >= morningEnd && totalMinutes < afternoonEnd) {
-      return 600000; // 10 dakika (öğleden sonra)
+    if (totalMinutes >= start && totalMinutes < end) {
+      return 30000; // 30 saniye
     } else {
-      return 7200000; // 2 saat (gece/sabah erkeni)
+      return 7200000; // 2 saat
     }
   }
 
-  // Hafta içi (Pazartesi-Cuma): 09:30-20:00 arası 20 saniye, diğer saatler 2 saat
+  // Hafta içi (Pazartesi-Cuma): 09:30-20:00 arası 30 saniye, diğer saatler 2 saat
   const start = 9 * 60 + 30;  // 09:30 = 570 dakika
   const end = 20 * 60;         // 20:00 = 1200 dakika
 
   if (totalMinutes >= start && totalMinutes < end) {
-    return 20000; // 20 saniye
+    return 30000; // 30 saniye
   } else {
     return 7200000; // 2 saat
   }
