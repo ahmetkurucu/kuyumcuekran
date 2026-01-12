@@ -6,7 +6,7 @@ const API_CONFIG = {
     url: 'https://harem-altin-live-gold-price-data.p.rapidapi.com/harem_altin/prices',
     dynamicId: process.env.RAPIDAPI_DYNAMIC_ID || '23b4c2fb31a242d1eebc0df9b9b65e5e',
     timeout: 5000,
-    intervalMs: 30000, // 30 saniye cache
+    intervalMs: 30000, // Default: 30 saniye (mesai saatlerinde kullanılacak)
     headers: {
       'x-rapidapi-host': 'harem-altin-live-gold-price-data.p.rapidapi.com',
       'x-rapidapi-key': process.env.RAPIDAPI_KEY || ''
@@ -14,6 +14,47 @@ const API_CONFIG = {
     name: 'smokinyazilim'
   }
 };
+
+/**
+ * Mesai saatlerine göre dinamik cache süresi hesaplar
+ * - Hafta içi 09:30-20:00: 30 saniye
+ * - Cumartesi 09:30-14:00: 30 saniye
+ * - Diğer saatler: 2 saat (7200000 ms)
+ */
+function getDynamicCacheInterval() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const totalMinutes = hours * 60 + minutes;
+
+  // Pazar günü: 2 saatte bir
+  if (day === 0) {
+    return 7200000; // 2 saat
+  }
+
+  // Cumartesi: 09:30-14:00 arası 30 saniye, diğer saatler 2 saat
+  if (day === 6) {
+    const start = 9 * 60 + 30;  // 09:30 = 570 dakika
+    const end = 14 * 60;         // 14:00 = 840 dakika
+    
+    if (totalMinutes >= start && totalMinutes < end) {
+      return 30000; // 30 saniye
+    } else {
+      return 7200000; // 2 saat
+    }
+  }
+
+  // Hafta içi (Pazartesi-Cuma): 09:30-20:00 arası 30 saniye, diğer saatler 2 saat
+  const start = 9 * 60 + 30;  // 09:30 = 570 dakika
+  const end = 20 * 60;         // 20:00 = 1200 dakika
+
+  if (totalMinutes >= start && totalMinutes < end) {
+    return 30000; // 30 saniye
+  } else {
+    return 7200000; // 2 saat
+  }
+}
 
 function parseRapidAPIData(dataArray) {
   const result = {};
@@ -174,13 +215,17 @@ function getStatus() {
 
 async function getPrices(context = {}) {
   const now = Date.now();
+  
+  // Dinamik cache süresi hesapla (mesai saatlerine göre)
+  const currentCacheInterval = getDynamicCacheInterval();
 
-  // Cache kontrolü (30 saniye)
-  if (state.cache && (now - state.cacheUpdatedAt < API_CONFIG.PAID.intervalMs)) {
+  // Cache kontrolü (dinamik süre)
+  if (state.cache && (now - state.cacheUpdatedAt < currentCacheInterval)) {
     return { 
       data: state.cache, 
       source: 'paid_api', 
-      cached: true, 
+      cached: true,
+      cacheIntervalMs: currentCacheInterval,
       status: getStatus() 
     };
   }
