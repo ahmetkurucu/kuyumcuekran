@@ -96,7 +96,7 @@
     <button class="btn btn-zoomout" id="btnZoomOut">🔎 Uzaklaştır</button>
     <button class="btn btn-reset"   id="btnReset">%100 Sıfırla</button>
     <button class="btn btn-full"    id="btnFull">⛶ Tam Ekran</button>
-    
+
     <h4 style="margin-top:16px">📱 Sayfalar</h4>
     <button class="btn btn-admin" onclick="location.href='/admin.html'">👨‍💼 Admin Panel</button>
   </div>
@@ -118,6 +118,7 @@
   <div class="status" id="status"></div>
 
 <script>
+  // ===== AUTH =====
   const token = localStorage.getItem('token');
   if (!token) {
     alert('Lütfen giriş yapın!');
@@ -127,18 +128,20 @@
   const API_BASE = window.location.origin + '/api';
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const shop = (user.full_name || user.username || 'KUYUMCU').toUpperCase();
-  
+
   document.getElementById("marquee").textContent = ` ${shop} — Canlı Altın Fiyatları `.repeat(3);
   document.getElementById("thShop").textContent = shop;
 
+  // ===== CLOCK =====
   const clockEl = document.getElementById("clock");
-  function tick() {
+  function tickClock() {
     const d = new Date();
     clockEl.textContent = d.toLocaleTimeString("tr-TR", { hour12: false });
   }
-  tick();
-  setInterval(tick, 1000);
+  tickClock();
+  setInterval(tickClock, 1000);
 
+  // ===== UI MAP =====
   const NAMES = {
     ALTIN: "HAS Altın",
     KULCEALTIN: "Gram Altın",
@@ -166,10 +169,10 @@
       else if (satis < last[code]) d = "down";
     }
     last[code] = satis;
-    
+
     const arr = d === "up" ? "▲" : d === "down" ? "▼" : "—";
     const n = NAMES[code] || code;
-    
+
     return `<tr data-code="${code}">
       <td>
         <div class="name-cell">
@@ -186,53 +189,91 @@
     </tr>`;
   }
 
+  // ===== GUARANTEED POLLING (Vercel-friendly) =====
+  const POLL_MS = 20000;
+
+  let pollTimer = null;
+  let inFlightController = null;
+
+  function stopPolling() {
+    if (pollTimer) clearTimeout(pollTimer);
+    pollTimer = null;
+    if (inFlightController) {
+      try { inFlightController.abort(); } catch {}
+    }
+    inFlightController = null;
+  }
+
+  function startPolling(immediate = true) {
+    stopPolling();
+    const loop = async () => {
+      await load();
+      pollTimer = setTimeout(loop, POLL_MS);
+    };
+    if (immediate) loop();
+    else pollTimer = setTimeout(loop, POLL_MS);
+  }
+
   async function load() {
+    // önceki istek varsa iptal et (üst üste binmesin)
+    if (inFlightController) {
+      try { inFlightController.abort(); } catch {}
+    }
+
+    const controller = new AbortController();
+    inFlightController = controller;
+
+    // 15sn timeout
+    const timeoutId = setTimeout(() => {
+      try { controller.abort(); } catch {}
+    }, 15000);
+
     try {
       updEl.textContent = "Güncelleniyor…";
-      
-      const response = await fetch(`${API_BASE}/fiyat/current`, {
-        headers: { 
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
+
+      // cache-buster => Vercel/edge/browser cache kır
+      const url = `${API_BASE}/fiyat/current?t=${Date.now()}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+          "Pragma": "no-cache"
         },
-        cache: 'no-store'
+        cache: "no-store",
+        signal: controller.signal
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const result = await response.json();
-      
-      if (!result.success) throw new Error(result.message || 'Veri alınamadı');
+      if (!result.success) throw new Error(result.message || "Veri alınamadı");
 
-      const data = result.data;
+      const data = result.data || {};
       const metadata = result.metadata || {};
-      
-      const order = ["ALTIN", "KULCEALTIN", "AYAR22", "CEYREK_YENI", "CEYREK_ESKI", 
-                     "YARIM_YENI", "YARIM_ESKI", "TEK_YENI", "TEK_ESKI", "ATA_YENI", 
+
+      const order = ["ALTIN", "KULCEALTIN", "AYAR22", "CEYREK_YENI", "CEYREK_ESKI",
+                     "YARIM_YENI", "YARIM_ESKI", "TEK_YENI", "TEK_ESKI", "ATA_YENI",
                      "USDTRY", "EURTRY"];
 
-      let html = '';
-      order.forEach(code => {
-        const alis = data[`${code}_alis`] || 0;
-        const satis = data[`${code}_satis`] || 0;
-        if (alis > 0 || satis > 0) {
-          html += rowHTML(code, alis, satis);
-        }
-      });
-
+      let html = "";
+      for (const code of order) {
+        const alis = Number(data[`${code}_alis`] || 0);
+        const satis = Number(data[`${code}_satis`] || 0);
+        if (alis > 0 || satis > 0) html += rowHTML(code, alis, satis);
+      }
       tbody.innerHTML = html;
-      
-      // Basit güncelleme zamanı - API'den bağımsız
+
+      // ekranda “çağrı attı” hissi net
       updEl.textContent = `Son: ${new Date().toLocaleTimeString('tr-TR')}`;
-      
-      // 5 dakika kontrolü - API'den gelen zamana göre
+
+      // 5 dk kontrolü (API metadata cacheUpdatedAt varsa)
       if (metadata.status?.cacheUpdatedAt) {
         const cacheTime = new Date(metadata.status.cacheUpdatedAt);
-        const now = new Date();
-        const diffMs = now - cacheTime;
-        const diffMin = Math.floor(diffMs / 60000);
-        
-        // 5 dakikadan eski ise uyarı göster
+        const diffMin = Math.floor((Date.now() - cacheTime.getTime()) / 60000);
+
         if (diffMin >= 5) {
           statusEl.textContent = "⚠️ SİSTEM AKTİF DEĞİLDİR";
           statusEl.style.color = "#ef4444";
@@ -245,31 +286,31 @@
       }
 
     } catch (e) {
-      console.error('Fiyat yükleme hatası:', e);
-      statusEl.textContent = "⚠️ " + e.message;
+      console.error("Fiyat yükleme hatası:", e);
+      const msg = (e && e.name === "AbortError")
+        ? "İstek zaman aşımına uğradı"
+        : (e && e.message ? e.message : "Bilinmeyen hata");
+      statusEl.textContent = "⚠️ " + msg;
       updEl.textContent = "Hata";
+    } finally {
+      clearTimeout(timeoutId);
+      // flight controller'ı temizle
+      if (inFlightController === controller) inFlightController = null;
     }
   }
 
-  load();
-  
-  // 20 saniyede bir otomatik yenile
-  let intervalId = setInterval(load, 20000);
-  
-  // Sayfa geri geldiğinde hemen yenile ve interval'i sıfırla
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-      load(); // Hemen yenile
-      clearInterval(intervalId);
-      intervalId = setInterval(load, 20000); // Interval'i yeniden başlat
-    }
-  });
-  
-  // Focus geri geldiğinde de yenile
-  window.addEventListener('focus', () => {
-    load();
+  // start
+  startPolling(true);
+
+  // sayfa geri geldiğinde: hemen yenile + döngüyü resetle
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) startPolling(true);
+    else stopPolling(); // istersen kapat; açınca tekrar başlar
   });
 
+  window.addEventListener("focus", () => startPolling(true));
+
+  // ===== SETTINGS UI =====
   const btn = document.getElementById("btnSettings");
   const panel = document.getElementById("panel");
   btn.onclick = () => panel.classList.toggle("active");
@@ -282,7 +323,6 @@
     document.body.style.transform = `scale(${zoom})`;
     document.body.style.transformOrigin = "top center";
   }
-
   document.getElementById("btnZoomIn").onclick = () => { zoom = Math.min(2.5, zoom + 0.1); applyZoom(); };
   document.getElementById("btnZoomOut").onclick = () => { zoom = Math.max(0.6, zoom - 0.1); applyZoom(); };
   document.getElementById("btnReset").onclick = () => { zoom = 1; applyZoom(); };
