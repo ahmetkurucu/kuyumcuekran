@@ -222,14 +222,15 @@
 
       tbody.innerHTML = html;
       
-      // API'den gelen gerçek güncelleme zamanı
+      // Basit güncelleme zamanı - API'den bağımsız
+      updEl.textContent = `Son: ${new Date().toLocaleTimeString('tr-TR')}`;
+      
+      // 5 dakika kontrolü - API'den gelen zamana göre
       if (metadata.status?.cacheUpdatedAt) {
         const cacheTime = new Date(metadata.status.cacheUpdatedAt);
         const now = new Date();
         const diffMs = now - cacheTime;
         const diffMin = Math.floor(diffMs / 60000);
-        
-        updEl.textContent = `Son: ${cacheTime.toLocaleTimeString('tr-TR')}`;
         
         // 5 dakikadan eski ise uyarı göster
         if (diffMin >= 5) {
@@ -240,7 +241,6 @@
           statusEl.textContent = "";
         }
       } else {
-        updEl.textContent = `Son: ${new Date().toLocaleTimeString('tr-TR')}`;
         statusEl.textContent = "";
       }
 
