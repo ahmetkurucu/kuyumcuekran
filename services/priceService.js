@@ -3,29 +3,33 @@ const axios = require('axios');
 // --- PAID API ONLY ---
 const API_CONFIG = {
   PAID: {
-    url: 'https://harem-altin-live-gold-price-data.p.rapidapi.com/harem_altin/prices',
-    dynamicId: process.env.RAPIDAPI_DYNAMIC_ID || '23b4c2fb31a242d1eebc0df9b9b65e5e',
+    url: 'https://harem-altin-anlik-altin-fiyatlari-live-rates-gold.p.rapidapi.com/economy/live-exchange-rates',
+    params: 'type=gold&code=CEYREKALTIN,YARIMALTIIN,TAMALTIIN,ATAALTIIN,GRAMALTIN,KULCEALTIN,GUMUS,ONS,USDTRY,EURTRY',
     timeout: 5000,
-    intervalMs: 30000, // Default: 30 saniye (mesai saatlerinde kullanılacak)
+    intervalMs: 20000, // 20 saniye cache (dinamik olarak değişecek)
     headers: {
-      'x-rapidapi-host': 'harem-altin-live-gold-price-data.p.rapidapi.com',
+      'x-rapidapi-host': 'harem-altin-anlik-altin-fiyatlari-live-rates-gold.p.rapidapi.com',
       'x-rapidapi-key': process.env.RAPIDAPI_KEY || ''
     },
-    name: 'smokinyazilim'
+    name: 'nosyapi'
   }
 };
 
 /**
  * Mesai saatlerine göre dinamik cache süresi hesaplar
- * - Hafta içi 09:30-20:00: 30 saniye
- * - Cumartesi 09:30-14:00: 30 saniye
+ * - Hafta içi 09:30-20:00: 20 saniye
+ * - Cumartesi 09:30-14:00: 20 saniye
+ * - Cumartesi 14:00-20:00: 10 dakika
  * - Diğer saatler: 2 saat (7200000 ms)
  */
 function getDynamicCacheInterval() {
+  // Türkiye saati (UTC+3) - prod sunucu farklı timezone'da olabilir
   const now = new Date();
-  const day = now.getDay(); // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
-  const hours = now.getHours();
-  const minutes = now.getMinutes();
+  const turkeyTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
+  
+  const day = turkeyTime.getDay(); // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
+  const hours = turkeyTime.getHours();
+  const minutes = turkeyTime.getMinutes();
   const totalMinutes = hours * 60 + minutes;
 
   // Pazar günü: 2 saatte bir
@@ -33,24 +37,27 @@ function getDynamicCacheInterval() {
     return 7200000; // 2 saat
   }
 
-  // Cumartesi: 09:30-14:00 arası 30 saniye, diğer saatler 2 saat
+  // Cumartesi: 09:30-14:00 arası 20 saniye, 14:00-20:00 arası 10 dakika, diğer saatler 2 saat
   if (day === 6) {
-    const start = 9 * 60 + 30;  // 09:30 = 570 dakika
-    const end = 14 * 60;         // 14:00 = 840 dakika
+    const morningStart = 9 * 60 + 30;  // 09:30 = 570 dakika
+    const morningEnd = 14 * 60;         // 14:00 = 840 dakika
+    const afternoonEnd = 20 * 60;       // 20:00 = 1200 dakika
     
-    if (totalMinutes >= start && totalMinutes < end) {
-      return 30000; // 30 saniye
+    if (totalMinutes >= morningStart && totalMinutes < morningEnd) {
+      return 20000; // 20 saniye (sabah mesaisi)
+    } else if (totalMinutes >= morningEnd && totalMinutes < afternoonEnd) {
+      return 600000; // 10 dakika (öğleden sonra)
     } else {
-      return 7200000; // 2 saat
+      return 7200000; // 2 saat (gece/sabah erkeni)
     }
   }
 
-  // Hafta içi (Pazartesi-Cuma): 09:30-20:00 arası 30 saniye, diğer saatler 2 saat
+  // Hafta içi (Pazartesi-Cuma): 09:30-20:00 arası 20 saniye, diğer saatler 2 saat
   const start = 9 * 60 + 30;  // 09:30 = 570 dakika
   const end = 20 * 60;         // 20:00 = 1200 dakika
 
   if (totalMinutes >= start && totalMinutes < end) {
-    return 30000; // 30 saniye
+    return 20000; // 20 saniye
   } else {
     return 7200000; // 2 saat
   }
@@ -59,47 +66,35 @@ function getDynamicCacheInterval() {
 function parseRapidAPIData(dataArray) {
   const result = {};
   
-  // smokinyazilim formatı: key, buy, sell
+  // nosyapi formatı: currencyCode, description, buy, sell
   const keyMapping = {
-    'GRAM ALTIN': 'KULCEALTIN',
-    'YENİ ÇEYREK': 'CEYREK_YENI',
-    'ESKİ ÇEYREK': 'CEYREK_ESKI',
-    'YENİ YARIM': 'YARIM_YENI',
-    'ESKİ YARIM': 'YARIM_ESKI',
-    'YENİ TAM': 'TEK_YENI',
-    'ESKİ TAM': 'TEK_ESKI',
-    'YENİ ATA': 'ATA_YENI',
-    'ESKİ ATA': 'ATA_ESKI',
-    'Has Altın': 'ALTIN',  // ← Has Altın
-    '22 AYAR': 'AYAR22',
-    'GÜMÜŞ': 'GUMUS'
-    // ONS kaldırıldı - Has Altın kullanılacak
+    'CEYREKALTIN': 'CEYREK_YENI',
+    'GRAMALTIN': 'KULCEALTIN',
+    'YARIMALTIIN': 'YARIM_YENI',
+    'TAMALTIIN': 'TEK_YENI',
+    'ATAALTIIN': 'ATA_YENI',
+    'KULCEALTIN': 'KULCEALTIN',
+    'ONS': 'ALTIN',
+    'GUMUS': 'GUMUS',
+    'USDTRY': 'USDTRY',
+    'EURTRY': 'EURTRY'
   };
 
   dataArray.forEach(item => {
-    const key = item.key || item.name;
-    const mappedKey = keyMapping[key];
+    const code = item.currencyCode || item.code;
+    const mappedKey = keyMapping[code];
     
     if (mappedKey) {
-      // Fiyatları parse et - virgül ve nokta temizle
-      let buyPrice = 0;
-      let sellPrice = 0;
-      
-      if (item.buy) {
-        // Binlik ayracı noktayı kaldır, ondalık virgülü noktaya çevir
-        buyPrice = parseFloat(String(item.buy).replace(/\./g, '').replace(',', '.')) || 0;
-      }
-      
-      if (item.sell) {
-        sellPrice = parseFloat(String(item.sell).replace(/\./g, '').replace(',', '.')) || 0;
-      }
+      // Fiyatları parse et - zaten number olarak geliyor
+      const buyPrice = parseFloat(item.buy) || 0;
+      const sellPrice = parseFloat(item.sell) || 0;
       
       result[`${mappedKey}_alis`] = buyPrice;
       result[`${mappedKey}_satis`] = sellPrice;
     }
   });
 
-  // Dolar ve Euro - API'de yoksa 0 yap
+  // Eksik olanları 0 yap
   if (!result.USDTRY_alis) result.USDTRY_alis = 0;
   if (!result.USDTRY_satis) result.USDTRY_satis = 0;
   if (!result.EURTRY_alis) result.EURTRY_alis = 0;
@@ -113,8 +108,8 @@ async function fetchFromPaidAPI() {
     throw new Error('RAPIDAPI_KEY environment variable is required');
   }
 
-  // Dynamic ID'yi URL'e ekle
-  const fullUrl = `${API_CONFIG.PAID.url}/${API_CONFIG.PAID.dynamicId}`;
+  // Query parametreleriyle URL oluştur
+  const fullUrl = `${API_CONFIG.PAID.url}?${API_CONFIG.PAID.params}`;
   
   const r = await axios.get(fullUrl, {
     timeout: API_CONFIG.PAID.timeout,
