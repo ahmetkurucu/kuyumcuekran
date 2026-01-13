@@ -205,6 +205,8 @@
       if (!result.success) throw new Error(result.message || 'Veri alınamadı');
 
       const data = result.data;
+      const metadata = result.metadata || {};
+      
       const order = ["ALTIN", "KULCEALTIN", "AYAR22", "CEYREK_YENI", "CEYREK_ESKI", 
                      "YARIM_YENI", "YARIM_ESKI", "TEK_YENI", "TEK_ESKI", "ATA_YENI", 
                      "USDTRY", "EURTRY"];
@@ -219,8 +221,28 @@
       });
 
       tbody.innerHTML = html;
-      updEl.textContent = `Son: ${new Date().toLocaleTimeString('tr-TR')}`;
-      statusEl.textContent = "";
+      
+      // API'den gelen gerçek güncelleme zamanı
+      if (metadata.status?.cacheUpdatedAt) {
+        const cacheTime = new Date(metadata.status.cacheUpdatedAt);
+        const now = new Date();
+        const diffMs = now - cacheTime;
+        const diffMin = Math.floor(diffMs / 60000);
+        
+        updEl.textContent = `Son: ${cacheTime.toLocaleTimeString('tr-TR')}`;
+        
+        // 5 dakikadan eski ise uyarı göster
+        if (diffMin >= 5) {
+          statusEl.textContent = "⚠️ SİSTEM AKTİF DEĞİLDİR";
+          statusEl.style.color = "#ef4444";
+          statusEl.style.fontWeight = "bold";
+        } else {
+          statusEl.textContent = "";
+        }
+      } else {
+        updEl.textContent = `Son: ${new Date().toLocaleTimeString('tr-TR')}`;
+        statusEl.textContent = "";
+      }
 
     } catch (e) {
       console.error('Fiyat yükleme hatası:', e);
@@ -230,7 +252,7 @@
   }
 
   load();
-  setInterval(load, 10000);
+  setInterval(load, 20000); // 20 saniyede bir yenile
 
   const btn = document.getElementById("btnSettings");
   const panel = document.getElementById("panel");
