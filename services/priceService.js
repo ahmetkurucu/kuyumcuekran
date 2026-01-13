@@ -23,9 +23,11 @@ const API_CONFIG = {
  * - Diğer saatler: 2 saat (7200000 ms)
  */
 function getDynamicCacheInterval() {
-  // Türkiye saati (UTC+3) - prod sunucu farklı timezone'da olabilir
+  // Türkiye saati (UTC+3)
   const now = new Date();
-  const turkeyTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
+  const turkeyOffset = 3 * 60; // UTC+3 (dakika cinsinden)
+  const localOffset = now.getTimezoneOffset(); // Local timezone offset (dakika cinsinden, negatif)
+  const turkeyTime = new Date(now.getTime() + (turkeyOffset + localOffset) * 60000);
   
   const day = turkeyTime.getDay(); // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
   const hours = turkeyTime.getHours();
