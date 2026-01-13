@@ -252,7 +252,23 @@
   }
 
   load();
-  setInterval(load, 20000); // 20 saniyede bir yenile
+  
+  // 20 saniyede bir otomatik yenile
+  let intervalId = setInterval(load, 20000);
+  
+  // Sayfa geri geldiğinde hemen yenile ve interval'i sıfırla
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      load(); // Hemen yenile
+      clearInterval(intervalId);
+      intervalId = setInterval(load, 20000); // Interval'i yeniden başlat
+    }
+  });
+  
+  // Focus geri geldiğinde de yenile
+  window.addEventListener('focus', () => {
+    load();
+  });
 
   const btn = document.getElementById("btnSettings");
   const panel = document.getElementById("panel");
