@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Super Admin - Kullanıcı Yönetimi</title>
+  <title>Super Admin Panel</title>
   <style>
     :root {
       --bg: #0f1419;
@@ -15,6 +15,10 @@
       --danger: #ef4444;
       --ok: #22c55e;
       --info: #3b82f6;
+<<<<<<< HEAD
+      --purple: #8b5cf6;
+=======
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,15 +49,37 @@
       gap: 10px;
     }
 
+<<<<<<< HEAD
+    .btn-logout {
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+=======
     .topbar-right { display: flex; gap: 10px; }
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
 
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
       padding: 30px 20px;
     }
 
+<<<<<<< HEAD
+    /* Butonlar Grid */
+    .buttons-section {
+=======
     .card {
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
       background: var(--panel);
       border-radius: 15px;
       padding: 30px;
@@ -62,7 +88,11 @@
       margin-bottom: 30px;
     }
 
+<<<<<<< HEAD
+    .section-title {
+=======
     .card-title {
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
       font-size: 20px;
       font-weight: 600;
       color: var(--gold);
@@ -74,6 +104,63 @@
       gap: 10px;
     }
 
+<<<<<<< HEAD
+    .buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .nav-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 25px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .nav-btn.api {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+
+    .nav-btn.vitrin {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .nav-btn.admin {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    }
+
+    .nav-btn-icon {
+      font-size: 28px;
+    }
+
+    /* Kullanıcı Yönetimi */
+    .users-section {
+      background: var(--panel);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+=======
     .btn {
       padding: 12px 16px;
       border: none;
@@ -90,6 +177,7 @@
     .btn-info { background: #0ea5e9; }
     .btn-danger { background: var(--danger); }
     .btn-small { padding: 8px 16px; font-size: 14px; }
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
 
     label {
       display: block;
@@ -101,21 +189,58 @@
 
     input, select {
       width: 100%;
-      padding: 12px 15px;
+      padding: 12px 16px;
       background: var(--bg);
-      border: 2px solid var(--border);
+      border: 1px solid var(--border);
       border-radius: 8px;
       color: var(--text);
       font-size: 15px;
-      transition: all 0.2s;
+      transition: border 0.3s;
     }
 
     input:focus, select:focus {
       outline: none;
       border-color: var(--gold);
-      box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
     }
 
+<<<<<<< HEAD
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 25px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      color: white;
+      font-size: 15px;
+      transition: all 0.3s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 14px;
+=======
     .form-group { margin-bottom: 20px; }
 
     .message {
@@ -215,12 +340,190 @@
     .pill-bad {
       color: var(--danger);
       font-weight: 700;
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
+    }
+
+    /* Kullanıcı Tablosu */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th {
+      background: var(--bg);
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--gold);
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:hover {
+      background: rgba(251, 191, 36, 0.05);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge.admin {
+      background: rgba(139, 92, 246, 0.2);
+      color: #a78bfa;
+    }
+
+    .badge.superadmin {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 15px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+
+    .message.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-dim);
     }
   </style>
 </head>
 
 <body>
+  <!-- Top Bar -->
   <div class="topbar">
+<<<<<<< HEAD
+    <h1>
+      <span>👑</span>
+      Super Admin Panel
+    </h1>
+    <button class="btn-logout" onclick="logout()">🚪 Çıkış</button>
+  </div>
+
+  <div class="container">
+    <!-- Navigasyon Butonları -->
+    <div class="buttons-section">
+      <div class="section-title">
+        <span>🎯</span>
+        Hızlı Erişim
+      </div>
+      <div class="buttons-grid">
+        <button class="nav-btn api" onclick="location.href='/api-statistics.html'">
+          <span class="nav-btn-icon">📊</span>
+          <span>API İstatistikleri</span>
+        </button>
+        <button class="nav-btn vitrin" onclick="location.href='/vitrin.html'">
+          <span class="nav-btn-icon">💎</span>
+          <span>Canlı Vitrin</span>
+        </button>
+        <button class="nav-btn admin" onclick="location.href='/admin.html'">
+          <span class="nav-btn-icon">👨‍💼</span>
+          <span>Admin Paneli</span>
+        </button>
+        <button class="nav-btn" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);" onclick="location.href='/messages.html'">
+          <span class="nav-btn-icon">💬</span>
+          <span>Mesajlar</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Kullanıcı Yönetimi -->
+    <div class="users-section">
+      <div class="section-title">
+        <span>👥</span>
+        Kullanıcı Yönetimi
+      </div>
+
+      <!-- Yeni Kullanıcı Ekle -->
+      <div style="background: rgba(59, 130, 246, 0.1); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+        <h3 style="color: var(--info); margin-bottom: 15px;">➕ Yeni Kullanıcı Ekle</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+          <div class="form-group">
+            <label>Kullanıcı Adı</label>
+            <input type="text" id="newUsername" placeholder="kullaniciadi" />
+          </div>
+          
+          <div class="form-group">
+            <label>Şifre</label>
+            <input type="password" id="newPassword" placeholder="••••••••" />
+          </div>
+          
+          <div class="form-group">
+            <label>Ad Soyad</label>
+            <input type="text" id="newFullName" placeholder="Ad Soyad" />
+          </div>
+          
+          <div class="form-group">
+            <label>Rol</label>
+            <select id="newRole">
+              <option value="admin">Admin</option>
+              <option value="superadmin">Super Admin</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-success" onclick="createUser()">
+            ✅ Kullanıcı Oluştur
+          </button>
+        </div>
+
+        <div class="message" id="createMsg"></div>
+      </div>
+
+      <!-- Mevcut Kullanıcılar -->
+      <h3 style="color: var(--text); margin-bottom: 15px;">📋 Mevcut Kullanıcılar</h3>
+      
+      <div id="usersLoading" class="loading">
+        <p>Kullanıcılar yükleniyor...</p>
+      </div>
+
+      <div id="usersTable" style="display: none;">
+        <table>
+          <thead>
+            <tr>
+              <th>Kullanıcı Adı</th>
+              <th>Ad Soyad</th>
+              <th>Rol</th>
+              <th>Kayıt Tarihi</th>
+              <th>İşlemler</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+          </tbody>
+        </table>
+=======
     <h1>🔐 SUPER ADMIN - Kullanıcı Yönetimi</h1>
     <div class="topbar-right">
       <button class="btn btn-info" onclick="location.href='/api-stats.html'">📊 API İstatistikleri</button>
@@ -365,15 +668,81 @@
       <div class="card-title"><span>👥</span>Kayıtlı Kullanıcılar</div>
       <div class="user-list" id="userList">
         <p style="color: var(--text-dim);">Yükleniyor...</p>
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
       </div>
     </div>
   </div>
 
   <script>
+    const API_BASE = window.location.origin + '/api';
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const API_BASE = window.location.origin + '/api';
 
+<<<<<<< HEAD
+    // Auth kontrolü
+    if (!token || user.role !== 'superadmin') {
+      alert('Bu sayfaya erişim yetkiniz yok!');
+      window.location.href = '/login.html';
+    }
+
+    // Kullanıcıları yükle
+    async function loadUsers() {
+      try {
+        const response = await fetch(`${API_BASE}/admin/users`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const result = await response.json();
+        
+        if (!result.success) throw new Error(result.message || 'Kullanıcılar alınamadı');
+
+        const users = result.data;
+        const tbody = document.getElementById('usersTableBody');
+
+        if (users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-dim);">Henüz kullanıcı yok</td></tr>';
+        } else {
+          tbody.innerHTML = users.map(u => `
+            <tr>
+              <td><strong>${u.username}</strong></td>
+              <td>${u.full_name || '-'}</td>
+              <td><span class="badge ${u.role}">${u.role === 'superadmin' ? 'Super Admin' : 'Admin'}</span></td>
+              <td>${new Date(u.createdAt).toLocaleDateString('tr-TR')}</td>
+              <td>
+                <button class="btn btn-danger btn-small" onclick="deleteUser('${u._id}', '${u.username}')">
+                  🗑️ Sil
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+
+        document.getElementById('usersLoading').style.display = 'none';
+        document.getElementById('usersTable').style.display = 'block';
+
+      } catch (error) {
+        console.error('Kullanıcılar yüklenemedi:', error);
+        document.getElementById('usersLoading').innerHTML = `<p style="color: var(--danger);">❌ ${error.message}</p>`;
+      }
+    }
+
+    // Yeni kullanıcı oluştur
+    async function createUser() {
+      const username = document.getElementById('newUsername').value.trim();
+      const password = document.getElementById('newPassword').value;
+      const full_name = document.getElementById('newFullName').value.trim();
+      const role = document.getElementById('newRole').value;
+
+      if (!username || !password) {
+        showMessage('createMsg', 'Kullanıcı adı ve şifre gerekli!', 'error');
+        return;
+      }
+=======
     if (!token) window.location.href = '/login.html';
 
     if (user.role !== 'superadmin') {
@@ -520,6 +889,7 @@
       const msgEl = document.getElementById('msg');
       msgEl.className = 'message show';
       msgEl.textContent = '⏳ Kullanıcı ekleniyor...';
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
 
       try {
         const payload = {
@@ -535,6 +905,38 @@
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
+<<<<<<< HEAD
+          body: JSON.stringify({ username, password, full_name, role })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) throw new Error(result.message || 'Kullanıcı oluşturulamadı');
+
+        showMessage('createMsg', '✅ Kullanıcı başarıyla oluşturuldu!', 'success');
+        
+        // Formu temizle
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('newFullName').value = '';
+        
+        // Kullanıcı listesini yenile
+        loadUsers();
+
+      } catch (error) {
+        showMessage('createMsg', '❌ ' + error.message, 'error');
+      }
+    }
+
+    // Kullanıcı sil
+    async function deleteUser(userId, username) {
+      if (!confirm(`"${username}" kullanıcısını silmek istediğinizden emin misiniz?`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/admin/users/${userId}`, {
+=======
           body: JSON.stringify(payload)
         });
         const data = await response.json();
@@ -595,9 +997,24 @@
 
       try {
         const res = await fetch(`${API_BASE}/auth/users/${userId}`, {
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
+<<<<<<< HEAD
+
+        const result = await response.json();
+
+        if (!result.success) throw new Error(result.message || 'Kullanıcı silinemedi');
+
+        alert('✅ Kullanıcı başarıyla silindi!');
+        loadUsers();
+
+      } catch (error) {
+        alert('❌ ' + error.message);
+=======
         const data = await res.json();
 
         if (data.success) {
@@ -608,20 +1025,37 @@
         }
       } catch (e) {
         alert('❌ ' + e.message);
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
       }
     }
 
+    // Mesaj göster
+    function showMessage(id, text, type) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.className = `message show ${type}`;
+      
+      setTimeout(() => {
+        el.classList.remove('show');
+      }, 5000);
+    }
+
+    // Çıkış yap
     function logout() {
-      if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
+      if (confirm('Çıkış yapmak istediğinizden emin misiniz?')) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login.html';
       }
     }
 
+<<<<<<< HEAD
+    // Sayfa yüklendiğinde kullanıcıları yükle
+=======
     // İlk yükleme
     checkCacheStatus();
     refreshUsage();
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
     loadUsers();
 
     // Otomatik güncelle
