@@ -16,10 +16,44 @@ const API_CONFIG = {
 };
 
 /**
- * Cache süresi - HER ZAMAN 20 saniye
+ * Mesai saatlerine göre dinamik cache süresi hesaplar
+ * - Hafta içi 09:30-20:00: 30 saniye
+ * - Cumartesi 09:30-14:00: 30 saniye
+ * - Diğer saatler: 2 saat (7200000 ms)
  */
 function getDynamicCacheInterval() {
-  return 20000; // Her zaman 20 saniye
+  const now = new Date();
+  const day = now.getDay(); // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const totalMinutes = hours * 60 + minutes;
+
+  // Pazar günü: 2 saatte bir
+  if (day === 0) {
+    return 7200000; // 2 saat
+  }
+
+  // Cumartesi: 09:30-14:00 arası 30 saniye, diğer saatler 2 saat
+  if (day === 6) {
+    const start = 9 * 60 + 30;  // 09:30 = 570 dakika
+    const end = 14 * 60;         // 14:00 = 840 dakika
+    
+    if (totalMinutes >= start && totalMinutes < end) {
+      return 30000; // 30 saniye
+    } else {
+      return 7200000; // 2 saat
+    }
+  }
+
+  // Hafta içi (Pazartesi-Cuma): 09:30-20:00 arası 30 saniye, diğer saatler 2 saat
+  const start = 9 * 60 + 30;  // 09:30 = 570 dakika
+  const end = 20 * 60;         // 20:00 = 1200 dakika
+
+  if (totalMinutes >= start && totalMinutes < end) {
+    return 30000; // 30 saniye
+  } else {
+    return 7200000; // 2 saat
+  }
 }
 
 function parseRapidAPIData(dataArray) {
