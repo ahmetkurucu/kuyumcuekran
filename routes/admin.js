@@ -32,18 +32,43 @@ router.get('/paid-api/stats', authenticateToken, requireSuperAdmin, async (req, 
   startOfToday.setHours(0,0,0,0);
   const today = await PaidApiLog.countDocuments({ createdAt: { $gte: startOfToday } });
 
-  // Top users
+  // Bugünkü başarılı/başarısız
+  const todaySuccess = await PaidApiLog.countDocuments({ createdAt: { $gte: startOfToday }, success: true });
+  const todayFail = await PaidApiLog.countDocuments({ createdAt: { $gte: startOfToday }, success: false });
+
+  // Top users (son N gün)
   const topUsers = await PaidApiLog.aggregate([
     { $match: { createdAt: { $gte: since } } },
-    { $group: { _id: '$username', count: { $sum: 1 }, fail: { $sum: { $cond: ['$success', 0, 1] } } } },
+    { $group: { 
+      _id: '$username', 
+      count: { $sum: 1 }, 
+      success: { $sum: { $cond: ['$success', 1, 0] } },
+      fail: { $sum: { $cond: ['$success', 0, 1] } } 
+    }},
     { $sort: { count: -1 } },
     { $limit: 10 }
   ]);
 
-  // Top IPs
+  // Günlük kullanıcı bazlı detay (bugün)
+  const todayByUser = await PaidApiLog.aggregate([
+    { $match: { createdAt: { $gte: startOfToday } } },
+    { $group: { 
+      _id: { username: '$username', userId: '$userId' },
+      count: { $sum: 1 },
+      success: { $sum: { $cond: ['$success', 1, 0] } },
+      fail: { $sum: { $cond: ['$success', 0, 1] } }
+    }},
+    { $sort: { count: -1 } }
+  ]);
+
+  // Top IPs (kullanıcı bilgisi dahil)
   const topIps = await PaidApiLog.aggregate([
     { $match: { createdAt: { $gte: since } } },
-    { $group: { _id: '$ip', count: { $sum: 1 }, fail: { $sum: { $cond: ['$success', 0, 1] } } } },
+    { $group: { 
+      _id: { ip: '$ip', username: '$username' },
+      count: { $sum: 1 }, 
+      fail: { $sum: { $cond: ['$success', 0, 1] } } 
+    }},
     { $sort: { count: -1 } },
     { $limit: 10 }
   ]);
@@ -53,8 +78,11 @@ router.get('/paid-api/stats', authenticateToken, requireSuperAdmin, async (req, 
     data: {
       days,
       today,
+      todaySuccess,
+      todayFail,
       total,
       topUsers,
+      todayByUser,
       topIps
     }
   });
@@ -70,6 +98,46 @@ router.get('/paid-api/logs', authenticateToken, requireSuperAdmin, async (req, r
     .lean();
 
   return res.json({ success: true, data: logs });
+});
+
+// ✅ Tüm kullanıcıları listele
+router.get('/users', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    await connectDB();
+    
+    const users = await User.find({})
+      .select('-password') // Şifreleri gösterme
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.json({ success: true, data: users });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ✅ Kullanıcı sil
+router.delete('/users/:id', authenticateToken, requireSuperAdmin, async (req, res) => {
+  try {
+    await connectDB();
+    
+    const userId = req.params.id;
+    
+    // Kendini silmeye çalışıyor mu?
+    if (userId === req.user.id) {
+      return res.status(400).json({ success: false, message: 'Kendi hesabınızı silemezsiniz!' });
+    }
+
+    const deletedUser = await User.findByIdAndDelete(userId);
+    
+    if (!deletedUser) {
+      return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
+    }
+
+    return res.json({ success: true, message: 'Kullanıcı silindi' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 module.exports = router;
