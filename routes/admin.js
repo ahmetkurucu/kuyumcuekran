@@ -32,6 +32,7 @@ router.get('/paid-api/stats', authenticateToken, requireSuperAdmin, async (req, 
   startOfToday.setHours(0,0,0,0);
   const today = await PaidApiLog.countDocuments({ createdAt: { $gte: startOfToday } });
 
+<<<<<<< HEAD
   // Bugünkü başarılı/başarısız
   const todaySuccess = await PaidApiLog.countDocuments({ createdAt: { $gte: startOfToday }, success: true });
   const todayFail = await PaidApiLog.countDocuments({ createdAt: { $gte: startOfToday }, success: false });
@@ -45,10 +46,17 @@ router.get('/paid-api/stats', authenticateToken, requireSuperAdmin, async (req, 
       success: { $sum: { $cond: ['$success', 1, 0] } },
       fail: { $sum: { $cond: ['$success', 0, 1] } } 
     }},
+=======
+  // Top users
+  const topUsers = await PaidApiLog.aggregate([
+    { $match: { createdAt: { $gte: since } } },
+    { $group: { _id: '$username', count: { $sum: 1 }, fail: { $sum: { $cond: ['$success', 0, 1] } } } },
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
     { $sort: { count: -1 } },
     { $limit: 10 }
   ]);
 
+<<<<<<< HEAD
   // Günlük kullanıcı bazlı detay (bugün)
   const todayByUser = await PaidApiLog.aggregate([
     { $match: { createdAt: { $gte: startOfToday } } },
@@ -69,6 +77,12 @@ router.get('/paid-api/stats', authenticateToken, requireSuperAdmin, async (req, 
       count: { $sum: 1 }, 
       fail: { $sum: { $cond: ['$success', 0, 1] } } 
     }},
+=======
+  // Top IPs
+  const topIps = await PaidApiLog.aggregate([
+    { $match: { createdAt: { $gte: since } } },
+    { $group: { _id: '$ip', count: { $sum: 1 }, fail: { $sum: { $cond: ['$success', 0, 1] } } } },
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
     { $sort: { count: -1 } },
     { $limit: 10 }
   ]);
@@ -78,11 +92,16 @@ router.get('/paid-api/stats', authenticateToken, requireSuperAdmin, async (req, 
     data: {
       days,
       today,
+<<<<<<< HEAD
       todaySuccess,
       todayFail,
       total,
       topUsers,
       todayByUser,
+=======
+      total,
+      topUsers,
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
       topIps
     }
   });
@@ -100,6 +119,7 @@ router.get('/paid-api/logs', authenticateToken, requireSuperAdmin, async (req, r
   return res.json({ success: true, data: logs });
 });
 
+<<<<<<< HEAD
 // ✅ Tüm kullanıcıları listele
 router.get('/users', authenticateToken, requireSuperAdmin, async (req, res) => {
   try {
@@ -141,3 +161,6 @@ router.delete('/users/:id', authenticateToken, requireSuperAdmin, async (req, re
 });
 
 module.exports = router;
+=======
+module.exports = router;
+>>>>>>> 97c38e2ca3b113df95e30fbf6e65db7498afc462
