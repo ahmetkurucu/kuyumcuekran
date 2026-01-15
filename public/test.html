@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smokinyazilim API - ÇALIŞAN ENDPOINT</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #28a745;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .success-badge {
+            text-align: center;
+            color: #155724;
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .api-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+        }
+
+        .api-info h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        .api-info p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .endpoint-box {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .endpoint-box strong {
+            color: #28a745;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #28a745;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.success {
+            border-left: 4px solid #28a745;
+            background: #d4edda;
+        }
+
+        .result.error {
+            border-left: 4px solid #dc3545;
+            background: #f8d7da;
+        }
+
+        .result h3 {
+            margin-bottom: 15px;
+        }
+
+        .result.success h3 {
+            color: #155724;
+        }
+
+        .result.error h3 {
+            color: #721c24;
+        }
+
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .price-card {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .price-card h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 5px;
+        }
+
+        .price-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #d4af37;
+        }
+
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .price-table th,
+        .price-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .price-table th {
+            background: #28a745;
+            color: white;
+            font-weight: 600;
+        }
+
+        .price-table tr:hover {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Smokinyazilim API - ÇALIŞAN ENDPOINT BULUNDU!</h1>
+        <div class="success-badge">
+            🎉 Bu sizin ücretli API'niz ve ÇALIŞIYOR!
+        </div>
+
+        <div class="api-info">
+            <h3>📋 API Bilgileri</h3>
+            <p><strong>API Sahibi:</strong> smokinyazilim</p>
+            <p><strong>API Adı:</strong> Harem Altın Live Gold Price Data</p>
+            <p><strong>Host:</strong> harem-altin-live-gold-price-data.p.rapidapi.com</p>
+            <p><strong>Durum:</strong> <span style="color: #28a745; font-weight: bold;">✅ AKTİF VE ÇALIŞIYOR</span></p>
+        </div>
+
+        <div class="api-info">
+            <h3>🔗 Çalışan Endpoint</h3>
+            <div class="endpoint-box">
+                <strong>Full URL:</strong>
+                https://harem-altin-live-gold-price-data.p.rapidapi.com/harem_altin/prices/23b4c2fb31a242d1eebc0df9b9b65e5e
+            </div>
+            <div class="endpoint-box">
+                <strong>Endpoint Pattern:</strong>
+                /harem_altin/prices/{DYNAMIC_ID}
+            </div>
+            <div class="endpoint-box">
+                <strong>Dynamic ID:</strong>
+                23b4c2fb31a242d1eebc0df9b9b65e5e
+            </div>
+        </div>
+
+        <button onclick="testAPI()">🚀 API'yi Test Et</button>
+        <button onclick="testAPI()">🔄 Yenile</button>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; color: #666;">API'den veri alınıyor...</p>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const API_KEY = '259f0873d6msha36e59f1e65788fp1bea3djsnfc4ba2a69c94';
+        const HOST = 'harem-altin-live-gold-price-data.p.rapidapi.com';
+        const ENDPOINT = '/harem_altin/prices/23b4c2fb31a242d1eebc0df9b9b65e5e';
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('result').classList.remove('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function showResult(type, title, content) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result show ${type}`;
+            resultDiv.innerHTML = `
+                <h3>${title}</h3>
+                ${content}
+            `;
+            hideLoading();
+        }
+
+        async function testAPI() {
+            showLoading();
+            const startTime = performance.now();
+            const url = `https://${HOST}${ENDPOINT}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'x-rapidapi-host': HOST,
+                        'x-rapidapi-key': API_KEY
+                    }
+                });
+
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                const statusCode = response.status;
+                
+                let data;
+                const text = await response.text();
+                try {
+                    data = JSON.parse(text);
+                } catch(e) {
+                    data = text;
+                }
+
+                if (response.ok) {
+                    let content = `
+                        <p><strong>✅ API Başarıyla Çalışıyor!</strong></p>
+                        <p><strong>Status Code:</strong> ${statusCode}</p>
+                        <p><strong>Yanıt Süresi:</strong> ${responseTime}ms</p>
+                        <p><strong>Zaman:</strong> ${new Date().toLocaleString('tr-TR')}</p>
+                    `;
+
+                    // Eğer data.data array ise, fiyatları göster
+                    if (data.data && Array.isArray(data.data)) {
+                        content += `
+                            <h4 style="margin-top: 20px;">💰 Altın Fiyatları (${data.data.length} adet):</h4>
+                            <table class="price-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ürün</th>
+                                        <th>Kod</th>
+                                        <th>Alış (₺)</th>
+                                        <th>Satış (₺)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+
+                        data.data.forEach(item => {
+                            content += `
+                                <tr>
+                                    <td><strong>${item.key || item.name || 'N/A'}</strong></td>
+                                    <td>${item.code || '-'}</td>
+                                    <td style="color: #28a745; font-weight: bold;">${item.buy || item.buying || 'N/A'}</td>
+                                    <td style="color: #dc3545; font-weight: bold;">${item.sell || item.selling || 'N/A'}</td>
+                                </tr>
+                            `;
+                        });
+
+                        content += `
+                                </tbody>
+                            </table>
+                        `;
+                    }
+
+                    // Ham JSON
+                    content += `
+                        <h4 style="margin-top: 20px;">📄 Ham JSON Yanıt:</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+
+                    showResult('success', '✅ API TEST BAŞARILI!', content);
+                } else {
+                    showResult('error', '❌ API Hatası', `
+                        <p><strong>Status Code:</strong> ${statusCode}</p>
+                        <p><strong>Yanıt Süresi:</strong> ${responseTime}ms</p>
+                        <h4 style="margin-top: 15px;">Hata Detayı:</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `);
+                }
+            } catch (error) {
+                showResult('error', '❌ Bağlantı Hatası', `
+                    <p><strong>Hata:</strong> ${error.message}</p>
+                    <p><strong>Açıklama:</strong> API'ye bağlanılamadı veya yanıt alınamadı.</p>
+                    <pre>${error.stack}</pre>
+                `);
+            }
+        }
+
+        // Sayfa yüklendiğinde otomatik test
+        window.onload = () => {
+            setTimeout(() => testAPI(), 500);
+        };
+    </script>
+</body>
+</html>

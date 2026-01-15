@@ -188,6 +188,7 @@
 
   async function load() {
     try {
+      console.log('🔄 API çağrısı yapılıyor:', new Date().toLocaleTimeString('tr-TR'));
       updEl.textContent = "Güncelleniyor…";
       
       const response = await fetch(`${API_BASE}/fiyat/current`, {
@@ -205,6 +206,8 @@
       if (!result.success) throw new Error(result.message || 'Veri alınamadı');
 
       const data = result.data;
+      const metadata = result.metadata || {};
+      
       const order = ["ALTIN", "KULCEALTIN", "AYAR22", "CEYREK_YENI", "CEYREK_ESKI", 
                      "YARIM_YENI", "YARIM_ESKI", "TEK_YENI", "TEK_ESKI", "ATA_YENI", 
                      "USDTRY", "EURTRY"];
@@ -219,8 +222,28 @@
       });
 
       tbody.innerHTML = html;
+      
+      // Basit güncelleme zamanı - API'den bağımsız
       updEl.textContent = `Son: ${new Date().toLocaleTimeString('tr-TR')}`;
-      statusEl.textContent = "";
+      
+      // 5 dakika kontrolü - API'den gelen zamana göre
+      if (metadata.status?.cacheUpdatedAt) {
+        const cacheTime = new Date(metadata.status.cacheUpdatedAt);
+        const now = new Date();
+        const diffMs = now - cacheTime;
+        const diffMin = Math.floor(diffMs / 60000);
+        
+        // 5 dakikadan eski ise uyarı göster
+        if (diffMin >= 5) {
+          statusEl.textContent = "⚠️ SİSTEM AKTİF DEĞİLDİR";
+          statusEl.style.color = "#ef4444";
+          statusEl.style.fontWeight = "bold";
+        } else {
+          statusEl.textContent = "";
+        }
+      } else {
+        statusEl.textContent = "";
+      }
 
     } catch (e) {
       console.error('Fiyat yükleme hatası:', e);
@@ -229,8 +252,13 @@
     }
   }
 
+  // İlk yükleme
   load();
-  setInterval(load, 10000);
+  
+  // Her 20 saniyede bir yenile - basit
+  setInterval(function() {
+    load();
+  }, 20000);
 
   const btn = document.getElementById("btnSettings");
   const panel = document.getElementById("panel");

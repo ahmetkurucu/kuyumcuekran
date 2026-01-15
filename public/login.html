@@ -13,6 +13,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 20px;
     }
     .container {
       background: white;
@@ -20,21 +21,27 @@
       border-radius: 15px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.2);
       width: 400px;
+      max-width: 100%;
     }
     .logo { text-align: center; margin-bottom: 30px; }
     .logo-icon { font-size: 64px; }
     h1 { text-align: center; color: #333; margin: 10px 0; }
     .subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 30px; }
     .form-group { margin-bottom: 20px; }
-    label { display: block; color: #555; margin-bottom: 8px; font-weight: 500; }
-    input {
+    label { display: block; color: #555; margin-bottom: 8px; font-weight: 500; font-size: 14px; }
+    input, textarea {
       width: 100%;
       padding: 12px;
       border: 2px solid #e0e0e0;
       border-radius: 8px;
-      font-size: 16px;
+      font-size: 15px;
+      font-family: inherit;
     }
-    input:focus { outline: none; border-color: #667eea; }
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    input:focus, textarea:focus { outline: none; border-color: #667eea; }
     .btn {
       width: 100%;
       padding: 12px;
@@ -45,17 +52,76 @@
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
+      transition: all 0.3s;
     }
-    .btn:hover { transform: translateY(-2px); }
-    .error {
-      background: #fee2e2;
-      color: #dc2626;
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .error, .success {
       padding: 10px;
       border-radius: 8px;
       margin-top: 15px;
       display: none;
+      font-size: 14px;
     }
-    .error.show { display: block; }
+    .error { background: #fee2e2; color: #dc2626; }
+    .success { background: #d1fae5; color: #065f46; }
+    .error.show, .success.show { display: block; }
+    
+    .contact-section {
+      margin-top: 25px;
+      padding: 20px;
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      border-radius: 10px;
+      border: 2px solid #d1d5db;
+    }
+    .contact-section h3 {
+      color: #374151;
+      font-size: 16px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .contact-section p {
+      color: #6b7280;
+      font-size: 13px;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    .toggle-form {
+      background: transparent;
+      color: #667eea;
+      border: 2px solid #667eea;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+    .toggle-form:hover {
+      background: #667eea;
+      color: white;
+    }
+    .contact-form {
+      display: none;
+      margin-top: 15px;
+    }
+    .contact-form.active {
+      display: block;
+    }
+    .back-btn {
+      background: #6b7280;
+      margin-top: 10px;
+    }
+    .back-btn:hover {
+      background: #4b5563;
+    }
   </style>
 </head>
 <body>
@@ -65,6 +131,8 @@
       <h1>Kuyumcu Vitrin</h1>
       <div class="subtitle">Marj & Fiyat Sistemi</div>
     </div>
+
+    <!-- Login Form -->
     <form id="loginForm">
       <div class="form-group">
         <label>Kullanıcı Adı</label>
@@ -75,15 +143,62 @@
         <input type="password" id="password" required>
       </div>
       <button type="submit" class="btn">Giriş Yap</button>
-      <div class="error" id="error"></div>
+      <div class="error" id="loginError"></div>
     </form>
+
+    <!-- Contact Section -->
+    <div class="contact-section">
+      <h3>
+        <span>🛒</span>
+        Satın Almak İçin
+      </h3>
+      <p>
+        Detaylı bilgi ve demo talebi için iletişim formunu doldurun, 
+        size en kısa sürede dönüş yapalım.
+      </p>
+      <button type="button" class="btn toggle-form" onclick="toggleContactForm()">
+        📧 İletişim Formu
+      </button>
+
+      <!-- Contact Form -->
+      <div class="contact-form" id="contactForm">
+        <form id="contactFormElement">
+          <div class="form-group">
+            <label>İsim Soyisim *</label>
+            <input type="text" id="contactName" required>
+          </div>
+          <div class="form-group">
+            <label>E-posta *</label>
+            <input type="email" id="contactEmail" required>
+          </div>
+          <div class="form-group">
+            <label>Telefon</label>
+            <input type="tel" id="contactPhone" placeholder="+90">
+          </div>
+          <div class="form-group">
+            <label>Firma Adı</label>
+            <input type="text" id="contactCompany">
+          </div>
+          <div class="form-group">
+            <label>Mesajınız *</label>
+            <textarea id="contactMessage" required placeholder="Sistemi satın almak istiyorum. Fiyat bilgisi ve demo talebinde bulunmak istiyorum."></textarea>
+          </div>
+          <button type="submit" class="btn" id="sendBtn">📤 Gönder</button>
+          <button type="button" class="btn back-btn" onclick="toggleContactForm()">← Geri</button>
+          <div class="error" id="contactError"></div>
+          <div class="success" id="contactSuccess"></div>
+        </form>
+      </div>
+    </div>
   </div>
+
   <script>
+    // Login
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
-      const errorEl = document.getElementById('error');
+      const errorEl = document.getElementById('loginError');
       
       try {
         const response = await fetch('/api/auth/login', {
@@ -96,14 +211,90 @@
         if (data.success && data.token) {
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
-          window.location.href = '/admin.html';
+          
+          // Role göre yönlendir
+          if (data.user.role === 'superadmin') {
+            window.location.href = '/super-admin.html';
+          } else {
+            window.location.href = '/admin.html';
+          }
         } else {
           errorEl.textContent = data.message || 'Giriş başarısız';
           errorEl.classList.add('show');
+          setTimeout(() => errorEl.classList.remove('show'), 3000);
         }
       } catch (error) {
         errorEl.textContent = 'Bağlantı hatası!';
         errorEl.classList.add('show');
+        setTimeout(() => errorEl.classList.remove('show'), 3000);
+      }
+    });
+
+    // Contact Form Toggle
+    function toggleContactForm() {
+      const form = document.getElementById('contactForm');
+      form.classList.toggle('active');
+    }
+
+    // Contact Form Submit
+    document.getElementById('contactFormElement').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const sendBtn = document.getElementById('sendBtn');
+      const errorEl = document.getElementById('contactError');
+      const successEl = document.getElementById('contactSuccess');
+      
+      const formData = {
+        name: document.getElementById('contactName').value.trim(),
+        email: document.getElementById('contactEmail').value.trim(),
+        phone: document.getElementById('contactPhone').value.trim(),
+        company: document.getElementById('contactCompany').value.trim(),
+        message: document.getElementById('contactMessage').value.trim()
+      };
+
+      // Validasyon
+      if (!formData.name || !formData.email || !formData.message) {
+        errorEl.textContent = 'Lütfen zorunlu alanları doldurun';
+        errorEl.classList.add('show');
+        setTimeout(() => errorEl.classList.remove('show'), 3000);
+        return;
+      }
+
+      try {
+        sendBtn.disabled = true;
+        sendBtn.textContent = '⏳ Gönderiliyor...';
+
+        const response = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          successEl.textContent = '✅ ' + data.message;
+          successEl.classList.add('show');
+          
+          // Formu temizle
+          document.getElementById('contactFormElement').reset();
+          
+          setTimeout(() => {
+            successEl.classList.remove('show');
+            toggleContactForm();
+          }, 3000);
+        } else {
+          errorEl.textContent = '❌ ' + (data.message || 'Gönderim başarısız');
+          errorEl.classList.add('show');
+          setTimeout(() => errorEl.classList.remove('show'), 3000);
+        }
+      } catch (error) {
+        errorEl.textContent = '❌ Bağlantı hatası!';
+        errorEl.classList.add('show');
+        setTimeout(() => errorEl.classList.remove('show'), 3000);
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = '📤 Gönder';
       }
     });
   </script>
